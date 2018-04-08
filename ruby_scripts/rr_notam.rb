@@ -17,8 +17,8 @@ Pony.options = {
     :address              => 'mail.messagingengine.com',
     :port                 => '587',
     :enable_starttls_auto => true,
-    :user_name            => 'sweaver@fastmail.fm',
-    :password             => 'BvIYPuS7BB',
+    :user_name            => '',   # need to add back in
+    :password             => '',   # need to add back in
     :authentication       => :plain, # :plain, :login, :cram_md5, no auth by default
     :domain               => "localhost.localdomain"
   }
@@ -32,22 +32,23 @@ class Notam
 end
 
 class Request   # Will create the appropriate request.xml file for the curl command and capture the output in response.xml
-  attr_reader :username, :password, :trans_id, :request_type, :delta_date, :request_xml
+  attr_reader :ip, :username, :password, :request_type, :trans_id, :delta_date, :request_xml
 
-  def initialize(username, password, request_type, trans_id, delta_date)
-    @username = username
-    @password = password
-    @request_type = request_type
-    @trans_id = trans_id
-    @delta_date = delta_date
-    
+  def initialize(params = {})    #ip, username, password, request_type, trans_id, delta_date)
+    @username     = params.fetch(:username, '')
+    @password     = params.fetch(:password, '')
+    @ip           = params.fetch(:ip, '')
+    @request_type = params.fetch(:request_type, :by_trans_id)    # only one to have a default
+    @trans_id     = params.fetch(:trans_id, '')
+    @delta_date   = params.fetch(:delta_date, '')
+
     xml_request_template = '
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:fes="http://www.opengis.net/fes/2.0">
    <soapenv:Header xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
       <wsse:Security>
          <wsse:UsernameToken>
              <wsse:Username>USERNAME</wsse:Username>
-            <wsse:Password>Password123!</wsse:Password>
+            <wsse:Password>PASSWORD</wsse:Password>
          </wsse:UsernameToken>
       </wsse:Security>
    </soapenv:Header>
@@ -63,28 +64,41 @@ class Request   # Will create the appropriate request.xml file for the curl comm
 </soapenv:Envelope>'
 
     case request_type
+    when :by_trans_id
+      x = xml_request_template.sub "REQUEST",  "<fes:ResourceId rid=\"#{trans_id.to_s}\"/>"
+      y = x.sub "USERNAME",  @username
+      @request_xml = y.sub "PASSWORD", @password
     when :bulk
       "do this"
     when :delta
       "do that"
-    when :transaction_id
-      x = xml_request_template.sub "REQUEST",  "<fes:ResourceId rid=\"#{trans_id.to_s}\"/>"
-      y = x.sub "USERNAME",  @username
-      @request_xml = y.sub "PASSWORD", @password
     else
       puts "Request must be of type :bulk, :delta, or :transaction_id"
     end
   end
+
+  def to_s
+    "#{username} #{password} #{ip} #{request_type} #{trans_id} #{delta_date} "
+  end
 end
 
-transaction_id_array = [47780365,47780366,47780367]
-
-
 puts 'top'
-transaction_id_array.collect do |ti|
-  req = Request.new("UAT_NDS_USER_01", "Password123!", :transaction_id, ti, "")
-  File.open("request.xml", 'w') { |rf| rf.puts req.request_xml }  # make the file xml_request
-  curl_command_for_trans_id = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @request.xml -X POST  https://xxx.xx.xx.xx/notamWFS/services/NOTAMDistributionService > transaction_id_files/'+req.trans_id.to_s+'.xml'
+system_information_hash = File.read("ignore/connection_information.txt")
+system_information = eval(system_information_hash)
+transaction_id_array =  system_information[:transaction_ids]
+username = system_information[:username]
+password = system_information[:password]
+ip = system_information[:ip]
+request_type = :request_ty
+
+transaction_id_array.collect do |trans_id|
+  puts ''
+  req = Request.new(:ip => ip, :username => username, :password => password, :trans_id => trans_id)
+  
+  File.open("templates/request.xml", 'w') { |rf| rf.puts req.request_xml }  # make the file xml_request
+  curl_command_for_trans_id_wo_ip = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @request.xml -X POST https://IP_ADDRESS/notamWFS/services/NOTAMDistributionService > transaction_id_files/'+req.trans_id.to_s+'.xml'
+  curl_command_for_trans_id = curl_command_for_trans_id_wo_ip.sub("IP_ADDRESS",ip)
+  puts curl_command_for_trans_id
   system(curl_command_for_trans_id)                               # have ruby run the req/resp service 
   xmllint_command_for_trans_id = 'xmllint --format transaction_id_files/'+req.trans_id.to_s+'.xml > transaction_id_files/'+req.trans_id.to_s+'_formatted.xml'
   system(xmllint_command_for_trans_id)                               # have ruby run the req/resp service 
@@ -154,6 +168,7 @@ def load_a_notam(ti)
 </soapenv:Envelope>'
   xml_request = xml_request_1 + ti.to_s + xml_request_2
   File.open("request_xml.xml", 'w') { |rf| rf.puts xml_request }  # make the file xml_request
+  connection_information = File.read("../ignore/connection_information.txt")
   curl_command_for_trans_id = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @request_xml.xml -X POST  https://155.178.63.81/notamWFS/services/NOTAMDistributionService > transaction_id_files/'+ti.to_s+'.xml'
   system(curl_command_for_trans_id)                               # have ruby run the req/resp service 
 end
@@ -237,15 +252,15 @@ while i < num  do
   load_all_notams(transaction_id_array)
   issue_present_for_batch, sample_bad_doc = analyze(transaction_id_array_w_one,i)
   puts "Email Sent: Issue Present for Batch? #{issue_present_for_batch}" if i==0
-  Pony.mail(:subject => "#{Time.now.to_s} Program starts", :body => "First batch: #{issue_present_for_batch.to_s}") if i==0
+  #Pony.mail(:subject => "#{Time.now.to_s} Program starts", :body => "First batch: #{issue_present_for_batch.to_s}") if i==0
   
   if (old_issue_present != issue_present_for_batch)
     if issue_present_for_batch
       puts "Email Sent: Issue Present For Batch"
-      Pony.mail(:subject => "#{Time.now.to_s} Issue Present", :body => "#{sample_bad_doc}")
+      # Pony.mail(:subject => "#{Time.now.to_s} Issue Present", :body => "#{sample_bad_doc}")
     else
       puts "Email Sent: Issue Not Present For Batch"
-      Pony.mail(:subject => "#{Time.now.to_s} Issue not Present", :body => "#{sample_bad_doc}")
+      # Pony.mail(:subject => "#{Time.now.to_s} Issue not Present", :body => "#{sample_bad_doc}")
     end
   end
   
