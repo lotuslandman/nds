@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns="urn:us.gov.dot.faa.aim.fns.nds" xmlns:ns="http://www.opengis.net/fes/2.0" targetNamespace="urn:us.gov.dot.faa.aim.fns.nds">
+	<wsdl:types>
+		<xsd:schema targetNamespace="http://www.opengis.net/wfs/2.0" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:ogc="http://www.opengis.net/ogc/1.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" version="1.1.0">
+			<xsd:include schemaLocation="http://schemas.opengis.net/wfs/2.0/wfs.xsd"/>
+			  
+	         <xsd:import namespace="http://www.opengis.net/ows/1.1"
+	            schemaLocation="http://schemas.opengis.net/ows/1.1.0/owsExceptionReport.xsd"/>
+	            
+	        
+		</xsd:schema>
+	</wsdl:types>
+	<wsdl:message name="GetCapabilitiesRequest">
+		<wsdl:part name="Body" element="wfs:GetCapabilities"/>
+	</wsdl:message>
+	<wsdl:message name="GetFeatureRequest">
+		<wsdl:part name="Body" element="wfs:GetFeature"/>
+	</wsdl:message>
+	<wsdl:message name="ServiceExceptionReport">
+		<wsdl:part name="Body" element="ows:ExceptionReport"/>
+	</wsdl:message>
+	<wsdl:message name="GetCapabilitiesResponse">
+		<wsdl:part name="Body" element="wfs:WFS_Capabilities"/>
+	</wsdl:message>
+	<wsdl:message name="GetFeatureResponse">
+		<wsdl:part name="Body" element="wfs:FeatureCollection"/>
+	</wsdl:message>
+	<wsdl:portType name="wfs">
+		<wsdl:operation name="wfs.getCapabilities">
+			<wsdl:input message="GetCapabilitiesRequest"/>
+			<wsdl:output message="GetCapabilitiesResponse"/>
+			<wsdl:fault name="ServiceExceptionReport" message="ServiceExceptionReport"/>
+		</wsdl:operation>
+		<wsdl:operation name="wfs.getFeature">
+			<wsdl:input message="GetFeatureRequest"/>
+			<wsdl:output message="GetFeatureResponse"/>
+			<wsdl:fault name="ServiceExceptionReport" message="ServiceExceptionReport"/>
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="wfs-SOAP" type="wfs">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<wsdl:operation name="wfs.getCapabilities">
+			<soap:operation soapAction="http://www.opengis.net/wfs/requests#GetCapabilities"/>
+			<wsdl:input>
+				<soap:body use="literal"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal"/>
+			</wsdl:output>
+			<wsdl:fault name="ServiceExceptionReport">
+				<soap:fault name="ServiceExceptionReport" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+		<wsdl:operation name="wfs.getFeature">
+			<soap:operation soapAction="http://www.opengis.net/wfs/requests#GetFeature"/>
+			<wsdl:input>
+				<soap:body use="literal"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body use="literal"/>
+			</wsdl:output>
+			<wsdl:fault name="ServiceExceptionReport">
+				<soap:fault name="ServiceExceptionReport" use="literal"/>
+			</wsdl:fault>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="NOTAMDistribution">
+		<wsdl:documentation>
+      </wsdl:documentation>
+		<wsdl:port name="wfs-SOAP-Port" binding="wfs-SOAP">
+			<soap:address location="https://notams.aim.faa.gov/notamWFS/services/NOTAMDistributionService"/>
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>
