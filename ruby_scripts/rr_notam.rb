@@ -42,8 +42,7 @@ class Request   # Will create the appropriate request.xml file for the curl comm
     @trans_id     = params.fetch(:trans_id, '')
     @delta_date   = params.fetch(:delta_date, '')
 
-    xml_request_template = '
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:fes="http://www.opengis.net/fes/2.0">
+    xml_request_template = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:fes="http://www.opengis.net/fes/2.0">
    <soapenv:Header xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
       <wsse:Security>
          <wsse:UsernameToken>
@@ -83,7 +82,7 @@ class Request   # Will create the appropriate request.xml file for the curl comm
 end
 
 puts 'top'
-system_information_hash = File.read("ignore/connection_information.txt")
+system_information_hash = File.read("ignore/connection_information.rb")
 system_information = eval(system_information_hash)
 transaction_id_array =  system_information[:transaction_ids]
 username = system_information[:username]
@@ -94,9 +93,11 @@ request_type = :request_ty
 transaction_id_array.collect do |trans_id|
   puts ''
   req = Request.new(:ip => ip, :username => username, :password => password, :trans_id => trans_id)
-  
   File.open("templates/request.xml", 'w') { |rf| rf.puts req.request_xml }  # make the file xml_request
-  curl_command_for_trans_id_wo_ip = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @request.xml -X POST https://IP_ADDRESS/notamWFS/services/NOTAMDistributionService > transaction_id_files/'+req.trans_id.to_s+'.xml'
+
+  curl_command_for_trans_id_wo_ip = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @templates/request.xml -X POST https://IP_ADDRESS/notamWFS/services/NOTAMDistributionService > transaction_id_files/'+req.trans_id.to_s+'.xml'
+  puts curl_command_for_trans_id_wo_ip
+
   curl_command_for_trans_id = curl_command_for_trans_id_wo_ip.sub("IP_ADDRESS",ip)
   puts curl_command_for_trans_id
   system(curl_command_for_trans_id)                               # have ruby run the req/resp service 
@@ -168,7 +169,7 @@ def load_a_notam(ti)
 </soapenv:Envelope>'
   xml_request = xml_request_1 + ti.to_s + xml_request_2
   File.open("request_xml.xml", 'w') { |rf| rf.puts xml_request }  # make the file xml_request
-  connection_information = File.read("../ignore/connection_information.txt")
+  connection_information = File.read("../ignore/connection_information.rb")
   curl_command_for_trans_id = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @request_xml.xml -X POST  https://155.178.63.81/notamWFS/services/NOTAMDistributionService > transaction_id_files/'+ti.to_s+'.xml'
   system(curl_command_for_trans_id)                               # have ruby run the req/resp service 
 end
