@@ -31,18 +31,24 @@ class Notam
   end
 end
 
-class Request   # Will create the appropriate request.xml file for the curl command and capture the output in response.xml
-  attr_reader :ip, :username, :password, :request_type, :trans_id, :delta_date, :request_xml
+class RequestResponse   # Will create the appropriate request.xml file for the curl command and capture the output in response.xml
+  attr_reader :ip, :username, :password, :request_type, :trans_id, :delta_date, :request_xml, :response, :pretty_response
 
   def initialize(params = {})    #ip, username, password, request_type, trans_id, delta_date)
     @username     = params.fetch(:username, '')
     @password     = params.fetch(:password, '')
     @ip           = params.fetch(:ip, '')
-    @request_type = params.fetch(:request_type, :by_trans_id)    # only one to have a default
+    @request_type = params.fetch(:request_type, '')    # only one to have a default
     @trans_id     = params.fetch(:trans_id, '')
     @delta_date   = params.fetch(:delta_date, '')
+  end
 
-    xml_request_template = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:fes="http://www.opengis.net/fes/2.0">
+  def to_s
+    "#{username} #{password} #{ip} #{request_type} #{trans_id} #{delta_date}"
+  end
+
+  def xml_request_template
+'<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:fes="http://www.opengis.net/fes/2.0">
    <soapenv:Header xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
       <wsse:Security>
          <wsse:UsernameToken>
@@ -61,49 +67,48 @@ class Request   # Will create the appropriate request.xml file for the curl comm
       </wfs:GetFeature>
    </soapenv:Body>
 </soapenv:Envelope>'
+  end
+  
+  def create_request_xml_file(path)
+    xrt1 = xml_request_template.sub "USERNAME",  @username
+    xrt2 = xrt1.sub "PASSWORD", @password
 
-    case request_type
+    case self.request_type
     when :by_trans_id
-      x = xml_request_template.sub "REQUEST",  "<fes:ResourceId rid=\"#{trans_id.to_s}\"/>"
-      y = x.sub "USERNAME",  @username
-      @request_xml = y.sub "PASSWORD", @password
-    when :bulk
-      "do this"
+      @request_xml = xrt2.sub "REQUEST",  "<fes:ResourceId rid=\"#{trans_id.to_s}\"/>"
     when :delta
-      "do that"
+      @request_xml = xrt2.sub "REQUEST",  "<fes:Function name=\"SearchByLastUpdateDate\"><fes:Literal>#{delta_date.to_s}</fes:Literal></fes:Function>"
+    when :bulk
     else
       puts "Request must be of type :bulk, :delta, or :transaction_id"
     end
+    File.open(path, 'w') { |rf| rf.puts request_xml}  # make the file xml_request
   end
 
-  def to_s
-    "#{username} #{password} #{ip} #{request_type} #{trans_id} #{delta_date} "
+  def create_response(path)
+    curl_command_1 = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @'+path+' -X POST https://IP_ADDRESS/notamWFS/services/NOTAMDistributionService > temporary/temp.xml'
+    curl_command = curl_command_1.sub("IP_ADDRESS",ip)
+    @response = system(curl_command)                               # have ruby run the req/resp service
+    @response = File.read("temporary/temp.xml")
+    @pretty_response = Nokogiri::XML(@response) { |config| config.strict }
   end
 end
+
+############  QUESTION  #############  Should I make a new method called process_request as a method in the Request class?
+request_type  = :by_trans_id
+transaction_id = "47780365"
 
 puts 'top'
 system_information_hash = File.read("ignore/connection_information.rb")
 system_information = eval(system_information_hash)
-transaction_id_array =  system_information[:transaction_ids]
 username = system_information[:username]
 password = system_information[:password]
 ip = system_information[:ip]
-request_type = :request_ty
-
-transaction_id_array.collect do |trans_id|
-  puts ''
-  req = Request.new(:ip => ip, :username => username, :password => password, :trans_id => trans_id)
-  File.open("templates/request.xml", 'w') { |rf| rf.puts req.request_xml }  # make the file xml_request
-
-  curl_command_for_trans_id_wo_ip = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @templates/request.xml -X POST https://IP_ADDRESS/notamWFS/services/NOTAMDistributionService > transaction_id_files/'+req.trans_id.to_s+'.xml'
-  puts curl_command_for_trans_id_wo_ip
-
-  curl_command_for_trans_id = curl_command_for_trans_id_wo_ip.sub("IP_ADDRESS",ip)
-  puts curl_command_for_trans_id
-  system(curl_command_for_trans_id)                               # have ruby run the req/resp service 
-  xmllint_command_for_trans_id = 'xmllint --format transaction_id_files/'+req.trans_id.to_s+'.xml > transaction_id_files/'+req.trans_id.to_s+'_formatted.xml'
-  system(xmllint_command_for_trans_id)                               # have ruby run the req/resp service 
-end
+path = "temporary/request.xml"
+req = RequestResponse.new(:ip => ip, :username => username, :password => password, :request_type => request_type, :trans_id => transaction_id)
+req.create_request_xml_file(path)
+req.create_response(path)
+puts req.pretty_response
 exit
 
 class ValidationError
@@ -235,10 +240,6 @@ def analyze(transaction_array,i)
   end
   return [issue_present_for_batch, sample_bad_doc]
 end
-
-transaction_id_array = [47780365,47780366,47780367,47780368,47780369,47780370,47780371,47780372,47780373,47780374,47780375,47780376,47780377,47780378,47780379,47780380,47780381,47780382,47780383,47780384,47780385,47780386,47780387,47780388,
-                        47780389,47780390,47780391,47780392,47780393,47780394,47780395,47780396,47780397,47780398,47780399,47780400,47780401,47780402,47780403,47780404,47780405,47780406,47780407,47780408,47780409,47780410,47780411,47780412,
-                        47780413,47780414]
 
 transaction_id_array = [47780365,47780366,47780367]
 

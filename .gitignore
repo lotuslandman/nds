@@ -1,6 +1,5 @@
 ignore
 transaction_id_files/
 *shell*
-templates/
 request_xml.xml
-
+temporary/
