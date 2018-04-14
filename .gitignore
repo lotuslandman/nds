@@ -3,3 +3,5 @@ transaction_id_files/
 *shell*
 request_xml.xml
 temporary/
+files_transaction_id
+files_delta

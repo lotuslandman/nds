@@ -2,6 +2,7 @@
 # Will call request response bulk, delta, and by transaction ID
 
 require 'rubygems'
+require 'pry'
 gem 'nokogiri' 
 require 'nokogiri' 
 require 'fileutils'
@@ -32,19 +33,15 @@ class Notam
 end
 
 class RequestResponse   # Will create the appropriate request.xml file for the curl command and capture the output in response.xml
-  attr_reader :ip, :username, :password, :request_type, :trans_id, :delta_date, :request_xml, :response, :pretty_response
+  attr_reader :endpoint, :username, :password, :request_type, :trans_id, :delta_date, :request_xml, :response, :pretty_response, :delta_file_name
 
-  def initialize(params = {})    #ip, username, password, request_type, trans_id, delta_date)
+  def initialize(params = {})    #endpoint, username, password, request_type
     @username     = params.fetch(:username, '')
     @password     = params.fetch(:password, '')
-    @ip           = params.fetch(:ip, '')
+    @endpoint           = params.fetch(:endpoint, '')
     @request_type = params.fetch(:request_type, '')    # only one to have a default
     @trans_id     = params.fetch(:trans_id, '')
     @delta_date   = params.fetch(:delta_date, '')
-  end
-
-  def to_s
-    "#{username} #{password} #{ip} #{request_type} #{trans_id} #{delta_date}"
   end
 
   def xml_request_template
@@ -83,34 +80,83 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
       puts "Request must be of type :bulk, :delta, or :transaction_id"
     end
     File.open(path, 'w') { |rf| rf.puts request_xml}  # make the file xml_request
+    ''
+  end
+  
+  def create_response_file(path)
+    @delta_file_name = "files_delta/delta_#{self.delta_date}.xml"
+    curl_command_1 = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @'+path+' -X POST END_POINT > '+@delta_file_name
+    curl_command = curl_command_1.sub("END_POINT",self.endpoint)
+#    system(curl_command)
   end
 
-  def create_response(path)
-    curl_command_1 = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @'+path+' -X POST https://IP_ADDRESS/notamWFS/services/NOTAMDistributionService > temporary/temp.xml'
-    curl_command = curl_command_1.sub("IP_ADDRESS",ip)
-    @response = system(curl_command)                               # have ruby run the req/resp service
-    @response = File.read("temporary/temp.xml")
-    @pretty_response = Nokogiri::XML(@response) { |config| config.strict }
+  def create_pretty_response_file
+    @response = File.read(self.delta_file_name)
+    pretty_response = Nokogiri::XML(@response) { |config| config.strict }
+    @pretty_response = pretty_response
+    File.open(@delta_file_name+"_pretty.xml", 'w') { |rf| rf.puts pretty_response}
+  end
+
+  def analyze
+    doc = @pretty_response
+    doc.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
+    
+    members = doc.xpath("//member/AIXMBasicMessage/@id")
+    members.collect do |m|
+#      puts "//member/AIXMBasicMessage[@id='#{m}']"
+      p = doc.at_xpath("//member/AIXMBasicMessage[@id='#{m}']")
+
+    end
+    exit
+
+
+
+
+    members = doc.xpath("//member/AIXMBasicMessage//scenario/text()")
+    puts members
+    puts ''
+    members = doc.xpath("//member/AIXMBasicMessage//*[@nil='true'][text()]")
+    puts members.size
+
+    exit
+    xsi_list = doc.xpath("//*[@nil='true'][text()]")
+    xsi_list_cleaned = xsi_list.collect do |xsi|
+      xsi.to_s.split(' ')[0].split('<')[1]
+    end.join(',')
+    issue_present = (xsi_list.size != 0)
+    puts ["#{Time.now.to_s}   Loop number: #{i} ",trans_id.to_s,scenario_number,xsi_list.size.to_s,xsi_list_cleaned].join(',') if issue_present
+    issue_present
+
   end
 end
 
-############  QUESTION  #############  Should I make a new method called process_request as a method in the Request class?
-request_type  = :by_trans_id
-transaction_id = "47780365"
+#transaction_id = "47780365" # for .81
+#transaction_id = "" # for .75
+transaction_id = "" # for 2nd floor test
+request_type  = :delta
+delta_date = "2018-04-13T08:00:00"
 
-puts 'top'
+path = "temporary/request.xml"
+
 system_information_hash = File.read("ignore/connection_information.rb")
 system_information = eval(system_information_hash)
 username = system_information[:username]
 password = system_information[:password]
-ip = system_information[:ip]
-path = "temporary/request.xml"
-req = RequestResponse.new(:ip => ip, :username => username, :password => password, :request_type => request_type, :trans_id => transaction_id)
-req.create_request_xml_file(path)
-req.create_response(path)
-puts req.pretty_response
-exit
+endpoint = system_information[:endpoint]
 
+req = RequestResponse.new(:endpoint => endpoint, :username => username, :password => password, :request_type => request_type, :trans_id => transaction_id, :delta_date => delta_date)
+req.create_request_xml_file(path)
+req.create_response_file(path)
+req.create_pretty_response_file
+req.analyze
+exit
+##################################
+##################################
+#
+#  Unused Below
+#
+##################################
+##################################
 class ValidationError
     
   attr_reader :xmlfilename, :scenario, :href_array_string, :good_hrefs, :valid_hrefs, :an_offender
@@ -175,7 +221,7 @@ def load_a_notam(ti)
   xml_request = xml_request_1 + ti.to_s + xml_request_2
   File.open("request_xml.xml", 'w') { |rf| rf.puts xml_request }  # make the file xml_request
   connection_information = File.read("../ignore/connection_information.rb")
-  curl_command_for_trans_id = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @request_xml.xml -X POST  https://155.178.63.81/notamWFS/services/NOTAMDistributionService > transaction_id_files/'+ti.to_s+'.xml'
+  curl_command_for_trans_id = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @request_xml.xml -X POST  https://155.178.63.81/notamWFS/services/NOTAMDistributionService > files_transaction_id/'+ti.to_s+'.xml'
   system(curl_command_for_trans_id)                               # have ruby run the req/resp service 
 end
 
@@ -185,17 +231,6 @@ def load_all_notams(transaction_array)
   end
 end
 
-def parse_valid_file(doc, trans_id, i)
-  doc.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
-  xsi_list = doc.xpath("//*[@nil='true'][text()]")
-  scenario_number = doc.at_xpath("*//scenario/text()")
-  xsi_list_cleaned = xsi_list.collect do |xsi|
-    xsi.to_s.split(' ')[0].split('<')[1]
-  end.join(',')
-  issue_present = (xsi_list.size != 0)
-  puts ["#{Time.now.to_s}   Loop number: #{i} ",trans_id.to_s,scenario_number,xsi_list.size.to_s,xsi_list_cleaned].join(',') if issue_present
-  issue_present
-end
 
 def get_bad_xsi(xml_file)
   nil_splitter = 'xsi:nil="true">'                  # if this is an end tag
@@ -224,7 +259,7 @@ def analyze(transaction_array,i)
   issue_present_for_batch = false
   sample_bad_doc = "Initial bad doc (not a true error)"
   transaction_array.collect do |trans_id|
-    xml_file_name = "transaction_id_files/#{trans_id}.xml"
+    xml_file_name = "files_transaction_id/#{trans_id}.xml"   
     xml_file = File.read(xml_file_name)
     begin
       doc     = Nokogiri::XML(xml_file) { |config| config.strict }
