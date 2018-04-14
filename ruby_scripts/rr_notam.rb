@@ -1,4 +1,3 @@
-# rr_notam
 # Will call request response bulk, delta, and by transaction ID
 
 require 'rubygems'
@@ -26,10 +25,15 @@ Pony.options = {
 }
 
 class Notam
-  attr_reader :notam_doc, :trans_id, :scenario
+  attr_reader :notam_doc, :trans_id, :scenario, :xsi_nil_present
 
   def initialize(notam_doc)
     @notam_doc = notam_doc   # this will be a Nokogiri node (or a Nokogiri document with pointer to node) need to search relative from here
+    @trans_id = self.notam_doc.attr('id')
+    @scenario = self.notam_doc.xpath(".//scenario/text()")
+    xsi_nil_list = self.notam_doc.xpath(".//*[@nil='true'][text()]")
+    @xsi_nil_present = xsi_nil_list.size > 0
+    #    @fns_id_array = notams.collect { |notam| notam.attr('id') }
   end
 end
 
@@ -106,30 +110,24 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
   def inspect_notams
 #    puts notam_array[0].notam_doc
     notam_array.collect do |nd|
-      puts nd.notam_doc.xpath(".//scenario/text()")***
-    end
+      puts "transaction ID: #{nd.trans_id}, scenario: #{nd.scenario}, xsi_nil_issue?: #{nd.xsi_nil_present}"
+    end      
     exit
   end
 
-  def extract_fns_id_array
-    doc = @pretty_response
-    doc.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
-    notams = doc.xpath("//AIXMBasicMessage")
-    @fns_id_array = notams.collect { |notam| notam.attr('id') }
-    @scenario_ids = notams.collect { |notam| notam.xpath(".//scenario/text()") }
-  end
+#  def extract_fns_id_array
+#    doc = @pretty_response
+#    doc.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
+#    notams = doc.xpath("//AIXMBasicMessage")
+#    @fns_id_array = notams.collect { |notam| notam.attr('id') }
+#    @scenario_ids = notams.collect { |notam| notam.xpath(".//scenario/text()") }
+#  end
 
-  def determine_if_xsi_nil
-    doc = @pretty_response
-    doc.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
-    notams = doc.xpath("//AIXMBasicMessage")
-
-  end
-  
-#      x = doc.xpath("//AIXMBasicMessage[@id='#{fns_id}']")
-#      y = x.xpath(".//scenario/text()")
-
-#  members = x.xpath("//scenario/text()")  
+#  def determine_if_xsi_nil
+#    doc = @pretty_response
+#    doc.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
+#    notams = doc.xpath("//AIXMBasicMessage")
+#  end
 end
 
 
