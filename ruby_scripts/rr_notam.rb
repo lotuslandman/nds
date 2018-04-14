@@ -110,13 +110,17 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     doc = @pretty_response
     doc.remove_namespaces!
     fns_id_array = @fns_id_array
+    counter = 0
     node_set = fns_id_array.each do |fns_id|
       x = doc.xpath("//AIXMBasicMessage[@id='#{fns_id}']")
-      binding.pry
+      y = x.xpath(".//scenario/text()")
+      puts y
+      puts "counter #{counter}"
+      counter += 1
     end
-    puts node_set[0]
+    exit
   end
-  
+#  members = x.xpath("//scenario/text()")  
 end
 
 puts 'top'
