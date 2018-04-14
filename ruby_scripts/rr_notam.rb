@@ -26,21 +26,22 @@ Pony.options = {
 }
 
 class Notam
-  attr_reader :trans_id
+  attr_reader :notam_doc, :trans_id, :scenario
 
-  def initalize(axim)
+  def initialize(notam_doc)
+    @notam_doc = notam_doc   # this will be a Nokogiri node (or a Nokogiri document with pointer to node) need to search relative from here
   end
 end
 
 class RequestResponse   # Will create the appropriate request.xml file for the curl command and capture the output in response.xml
-  attr_reader :endpoint, :username, :password, :request_type, :trans_id, :delta_date, :request_xml, :response, :pretty_response, :delta_file_name, :fns_id_array
+  attr_reader :endpoint, :username, :password, :request_type, :trans_id, :delta_date, :request_xml, :response, :pretty_response, :delta_file_name, :fns_id_array, :scenario_ids, :notam_array
 
   def initialize(params = {})    #endpoint, username, password, request_type
     @username     = params.fetch(:username, '')
     @password     = params.fetch(:password, '')
     @endpoint           = params.fetch(:endpoint, '')
     @request_type = params.fetch(:request_type, '')    # only one to have a default
-    @trans_id     = params.fetch(:trans_id, '')
+    @trans_id     = params.fetch(:trans_id, '')        # this should be in NOTAM only and not here
     @delta_date   = params.fetch(:delta_date, '')
   end
 
@@ -95,35 +96,43 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     pretty_response = Nokogiri::XML(@response) { |config| config.strict }
     @pretty_response = pretty_response
     File.open(@delta_file_name+"_pretty.xml", 'w') { |rf| rf.puts pretty_response}
+    doc = pretty_response.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
+    notam_docs = doc.xpath("//AIXMBasicMessage")
+    @notam_array = notam_docs.collect do |notam|
+      Notam.new(notam)
+    end
+  end
+
+  def inspect_notams
+#    puts notam_array[0].notam_doc
+    notam_array.collect do |nd|
+      puts nd.notam_doc.xpath(".//scenario/text()")***
+    end
+    exit
   end
 
   def extract_fns_id_array
     doc = @pretty_response
     doc.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
-    elems = doc.xpath("//AIXMBasicMessage")
-    @fns_id_array = elems.collect do |el|
-      el.attr('id')
-    end
+    notams = doc.xpath("//AIXMBasicMessage")
+    @fns_id_array = notams.collect { |notam| notam.attr('id') }
+    @scenario_ids = notams.collect { |notam| notam.xpath(".//scenario/text()") }
   end
 
-  def process_all_notams
+  def determine_if_xsi_nil
     doc = @pretty_response
-    doc.remove_namespaces!
-    fns_id_array = @fns_id_array
-    counter = 0
-    node_set = fns_id_array.each do |fns_id|
-      x = doc.xpath("//AIXMBasicMessage[@id='#{fns_id}']")
-      y = x.xpath(".//scenario/text()")
-      puts y
-      puts "counter #{counter}"
-      counter += 1
-    end
-    exit
+    doc.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
+    notams = doc.xpath("//AIXMBasicMessage")
+
   end
+  
+#      x = doc.xpath("//AIXMBasicMessage[@id='#{fns_id}']")
+#      y = x.xpath(".//scenario/text()")
+
 #  members = x.xpath("//scenario/text()")  
 end
 
-puts 'top'
+
 #transaction_id = "47780365" # for .81
 #transaction_id = "" # for .75
 transaction_id = "" # for 2nd floor test
@@ -141,9 +150,10 @@ req = RequestResponse.new(:endpoint => endpoint, :username => username, :passwor
 req.create_request_xml_file(path)
 req.create_response_file(path)
 req.create_pretty_response_file
-req.extract_fns_id_array
-req.process_all_notams
-exit
+req.inspect_notams
+#req.extract_fns_id_array
+#req.determine_if_xsi_nil
+#req.process_all_notams
 ##################################
 ##################################
 #
