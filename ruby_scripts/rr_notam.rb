@@ -33,7 +33,7 @@ class Notam
 end
 
 class RequestResponse   # Will create the appropriate request.xml file for the curl command and capture the output in response.xml
-  attr_reader :endpoint, :username, :password, :request_type, :trans_id, :delta_date, :request_xml, :response, :pretty_response, :delta_file_name
+  attr_reader :endpoint, :username, :password, :request_type, :trans_id, :delta_date, :request_xml, :response, :pretty_response, :delta_file_name, :fns_id_array
 
   def initialize(params = {})    #endpoint, username, password, request_type
     @username     = params.fetch(:username, '')
@@ -97,39 +97,29 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     File.open(@delta_file_name+"_pretty.xml", 'w') { |rf| rf.puts pretty_response}
   end
 
-  def analyze
+  def extract_fns_id_array
     doc = @pretty_response
     doc.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
-    
-    members = doc.xpath("//member/AIXMBasicMessage/@id")
-    members.collect do |m|
-#      puts "//member/AIXMBasicMessage[@id='#{m}']"
-      p = doc.at_xpath("//member/AIXMBasicMessage[@id='#{m}']")
-
+    elems = doc.xpath("//AIXMBasicMessage")
+    @fns_id_array = elems.collect do |el|
+      el.attr('id')
     end
-    exit
-
-
-
-
-    members = doc.xpath("//member/AIXMBasicMessage//scenario/text()")
-    puts members
-    puts ''
-    members = doc.xpath("//member/AIXMBasicMessage//*[@nil='true'][text()]")
-    puts members.size
-
-    exit
-    xsi_list = doc.xpath("//*[@nil='true'][text()]")
-    xsi_list_cleaned = xsi_list.collect do |xsi|
-      xsi.to_s.split(' ')[0].split('<')[1]
-    end.join(',')
-    issue_present = (xsi_list.size != 0)
-    puts ["#{Time.now.to_s}   Loop number: #{i} ",trans_id.to_s,scenario_number,xsi_list.size.to_s,xsi_list_cleaned].join(',') if issue_present
-    issue_present
-
   end
+
+  def process_all_notams
+    doc = @pretty_response
+    doc.remove_namespaces!
+    fns_id_array = @fns_id_array
+    node_set = fns_id_array.each do |fns_id|
+      x = doc.xpath("//AIXMBasicMessage[@id='#{fns_id}']")
+      binding.pry
+    end
+    puts node_set[0]
+  end
+  
 end
 
+puts 'top'
 #transaction_id = "47780365" # for .81
 #transaction_id = "" # for .75
 transaction_id = "" # for 2nd floor test
@@ -137,7 +127,6 @@ request_type  = :delta
 delta_date = "2018-04-13T08:00:00"
 
 path = "temporary/request.xml"
-
 system_information_hash = File.read("ignore/connection_information.rb")
 system_information = eval(system_information_hash)
 username = system_information[:username]
@@ -148,7 +137,8 @@ req = RequestResponse.new(:endpoint => endpoint, :username => username, :passwor
 req.create_request_xml_file(path)
 req.create_response_file(path)
 req.create_pretty_response_file
-req.analyze
+req.extract_fns_id_array
+req.process_all_notams
 exit
 ##################################
 ##################################
