@@ -41,7 +41,7 @@ class Notam
 end
 
 class RequestResponse   # Will create the appropriate request.xml file for the curl command and capture the output in response.xml
-  attr_reader :endpoint, :username, :password, :request_type, :trans_id, :delta_date, :request_xml, :response, :pretty_response, :delta_file_name, :fns_id_array, :scenario_ids, :notam_array
+  attr_reader :endpoint, :username, :password, :request_type, :trans_id, :delta_date, :request_xml, :response, :pretty_response, :delta_file_name, :delta_file_name_pretty, :fns_id_array, :scenario_ids, :notam_array
 
   def initialize(params = {})    #endpoint, username, password, request_type
     @username     = params.fetch(:username, '')
@@ -92,7 +92,8 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
   end
   
   def create_response_file(path)
-    @delta_file_name = "files_delta/delta_#{self.delta_date}.xml"
+    @delta_file_name        = "files_delta/delta_#{self.delta_date}.xml"
+    @delta_file_name_pretty = "files_delta_pretty/delta_#{self.delta_date}_pretty.xml"
     curl_command_1 = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @'+path+' -X POST END_POINT > '+@delta_file_name
     curl_command = curl_command_1.sub("END_POINT",self.endpoint)
     system(curl_command)
@@ -103,7 +104,7 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     puts @response[0..5000]
     pretty_response = Nokogiri::XML(@response) { |config| config.strict }
     @pretty_response = pretty_response
-    File.open(@delta_file_name+"_pretty.xml", 'w') { |rf| rf.puts pretty_response}
+    File.open(@delta_file_name_pretty+"_pretty.xml", 'w') { |rf| rf.puts pretty_response}
     doc = pretty_response.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
     notam_docs = doc.xpath("//AIXMBasicMessage")
     @notam_array = notam_docs.collect do |notam|
@@ -121,7 +122,7 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
 end
 
 def find_time_over_ten_minutes_ago_as_string
-  hours_ago = 71   # start at 10 hours ago
+  hours_ago = 2   # start at 10 hours ago
   time_range = hours_ago * 60 * 60 # convert hours to seconds
   t = Time.now - time_range
   t.strftime "%Y-%m-%dT%H:%M:%S"

@@ -5,3 +5,6 @@ request_xml.xml
 temporary/
 files_transaction_id
 files_delta
+/file.log
+files_delta_pretty/
+files_delta_sample/
