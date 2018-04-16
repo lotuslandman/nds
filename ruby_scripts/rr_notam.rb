@@ -25,12 +25,15 @@ Pony.options = {
 }
 
 class Notam
-  attr_reader :notam_doc, :trans_id, :scenario, :xsi_nil_present
+  attr_reader :notam_doc, :trans_id, :scenario, :xsi_nil_present, :begin_position, :end_position, :time_position
 
   def initialize(notam_doc)
     @notam_doc = notam_doc   # this will be a Nokogiri node (or a Nokogiri document with pointer to node) need to search relative from here
     @trans_id = self.notam_doc.attr('id')
     @scenario = self.notam_doc.xpath(".//scenario/text()")
+    @begin_position = self.notam_doc.xpath(".//beginPosition/text()")
+    @end_position = self.notam_doc.xpath(".//endPosition/text()")
+    @time_position = self.notam_doc.xpath(".//timePosition/text()")
     xsi_nil_list = self.notam_doc.xpath(".//*[@nil='true'][text()]")
     @xsi_nil_present = xsi_nil_list.size > 0
     #    @fns_id_array = notams.collect { |notam| notam.attr('id') }
@@ -43,7 +46,7 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
   def initialize(params = {})    #endpoint, username, password, request_type
     @username     = params.fetch(:username, '')
     @password     = params.fetch(:password, '')
-    @endpoint           = params.fetch(:endpoint, '')
+    @endpoint     = params.fetch(:endpoint, '')
     @request_type = params.fetch(:request_type, '')    # only one to have a default
     @trans_id     = params.fetch(:trans_id, '')        # this should be in NOTAM only and not here
     @delta_date   = params.fetch(:delta_date, '')
@@ -92,11 +95,12 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     @delta_file_name = "files_delta/delta_#{self.delta_date}.xml"
     curl_command_1 = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @'+path+' -X POST END_POINT > '+@delta_file_name
     curl_command = curl_command_1.sub("END_POINT",self.endpoint)
-#    system(curl_command)
+    system(curl_command)
   end
 
   def create_pretty_response_file
     @response = File.read(self.delta_file_name)
+    puts @response[0..5000]
     pretty_response = Nokogiri::XML(@response) { |config| config.strict }
     @pretty_response = pretty_response
     File.open(@delta_file_name+"_pretty.xml", 'w') { |rf| rf.puts pretty_response}
@@ -108,34 +112,30 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
   end
 
   def inspect_notams
-#    puts notam_array[0].notam_doc
+    puts "notam_array.size #{notam_array.size}"
     notam_array.collect do |nd|
-      puts "transaction ID: #{nd.trans_id}, scenario: #{nd.scenario}, xsi_nil_issue?: #{nd.xsi_nil_present}"
+      puts "transaction ID: #{nd.trans_id}, scenario: #{nd.scenario}, xsi_nil_issue?: #{nd.xsi_nil_present}, endPoistion: #{nd.begin_position}"
     end      
-    exit
   end
 
-#  def extract_fns_id_array
-#    doc = @pretty_response
-#    doc.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
-#    notams = doc.xpath("//AIXMBasicMessage")
-#    @fns_id_array = notams.collect { |notam| notam.attr('id') }
-#    @scenario_ids = notams.collect { |notam| notam.xpath(".//scenario/text()") }
-#  end
-
-#  def determine_if_xsi_nil
-#    doc = @pretty_response
-#    doc.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
-#    notams = doc.xpath("//AIXMBasicMessage")
-#  end
 end
 
+def find_time_over_ten_minutes_ago_as_string
+  hours_ago = 71   # start at 10 hours ago
+  time_range = hours_ago * 60 * 60 # convert hours to seconds
+  t = Time.now - time_range
+  t.strftime "%Y-%m-%dT%H:%M:%S"
+end
 
 #transaction_id = "47780365" # for .81
 #transaction_id = "" # for .75
 transaction_id = "" # for 2nd floor test
 request_type  = :delta
-delta_date = "2018-04-13T08:00:00"
+delta_date = "2018-04-13T16:00:00"
+#delta_date = "2018-04-13T08:00:00"
+#delta_date = "2018-04-12T08:00:00"
+
+delta_date = find_time_over_ten_minutes_ago_as_string
 
 path = "temporary/request.xml"
 system_information_hash = File.read("ignore/connection_information.rb")
@@ -149,6 +149,8 @@ req.create_request_xml_file(path)
 req.create_response_file(path)
 req.create_pretty_response_file
 req.inspect_notams
+puts delta_date
+exit
 #req.extract_fns_id_array
 #req.determine_if_xsi_nil
 #req.process_all_notams
