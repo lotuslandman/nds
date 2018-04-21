@@ -12,29 +12,25 @@ module Ndsapp1
     config.load_defaults 5.1
 
     config.after_initialize do
-      puts 'hi'
       update_database
-      puts 'bye'
     end
 
     def update_database
-      file_name_array = Dir.glob("/home/scott/development/nds/files_delta/*").collect do |fnp|
-        'files_delta/'+File.basename(fnp)
-      end
-      request_type  = :delta
-      file_name_array.sort.each do |file_name|
-        puts file_name
-        req = RequestResponse.new(:request_type => request_type)
-        req.create_pretty_response_file(file_name)
-        req.inspect_notams
-      end
 
+      @delta_stream = DeltaStream.find_by_id(1)
+      @delta_stream = DeltaStream.create(id: 1, frequency_minutes: 60, delta_reachback: 120) if @delta_stream.nil?
+#      puts @delta_stream.id 
+#      @delta_request = @delta_stream.delta_requests.create()
+#      puts @delta_request.id 
+#      @notam = @delta_request.notams.create()
+#      puts @notam.id 
+      @delta_stream.fill_database
+      
     end
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration should go into files in config/initializers
     # -- all .rb files in that directory are automatically loaded.
   end
-
 
 end
 
