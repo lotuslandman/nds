@@ -9,9 +9,10 @@ class DeltaRequest < ApplicationRecord
 #  end
 #  
   def create_pretty_response_file(file_name)
-    self.request_time = file_name.split("delta")[2].split('.')[0][1..-1]
+    self.request_time = file_name
     self.save
-    @response = File.read(file_name)
+    fn = 'delta_'+file_name.sub(" UTC","").split(' ').join('T')+'.xml'
+    @response = File.read('../files_delta/'+fn)
     doc_w_name_space = pretty_response = Nokogiri::XML(@response) { |config| config.strict }
     doc = doc_w_name_space.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
     notam_docs = doc.xpath("//AIXMBasicMessage")

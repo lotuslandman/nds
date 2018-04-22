@@ -16,17 +16,11 @@ module Ndsapp1
     end
 
     def update_database
-
-      @delta_stream = DeltaStream.find_by_id(1)
+      @delta_stream = DeltaStream.find_by_id(1)   # use the DeltaStream with id = 1
       @delta_stream = DeltaStream.create(id: 1, frequency_minutes: 60, delta_reachback: 120) if @delta_stream.nil?
-#      puts @delta_stream.id 
-#      @delta_request = @delta_stream.delta_requests.create()
-#      puts @delta_request.id 
-#      @notam = @delta_request.notams.create()
-#      puts @notam.id 
       @delta_stream.fill_database
-      
     end
+    
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration should go into files in config/initializers
     # -- all .rb files in that directory are automatically loaded.

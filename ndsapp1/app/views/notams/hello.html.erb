@@ -1,0 +1,5 @@
+<h1>Notams#hello</h1>
+<p>Find me in app/views/notams/hello.html.erb</p>
+<%= column_chart Notam.group(:scenario).count %>
+<%= column_chart Notam.notams_grouped_by_request_date %>
+
