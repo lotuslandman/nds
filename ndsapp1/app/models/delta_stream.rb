@@ -27,4 +27,11 @@ class DeltaStream < ApplicationRecord
       @delta_request.create_pretty_response_file(file_name)
     end
   end
+
+  def self.update_database
+      @delta_stream = DeltaStream.find_by_id(1)   # use the DeltaStream with id = 1
+      @delta_stream = DeltaStream.create(id: 1, frequency_minutes: 60, delta_reachback: 120) if @delta_stream.nil?
+      @delta_stream.fill_database
+    end
+
 end

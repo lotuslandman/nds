@@ -2,12 +2,6 @@ class DeltaRequest < ApplicationRecord
   belongs_to :delta_stream
   has_many :notams, dependent: :destroy
 
-#  attr_reader :request_type, :response, :delta_file_name, :notam_array, :fns_id_array, :scenario_id_array 
-  
-#  def initialize(params = {})    #endpoint, username, password, request_type
-#    @request_type = params.fetch(:request_type, '')    # only one to have a default
-#  end
-#  
   def create_pretty_response_file(file_name)
     self.request_time = file_name
     self.save
@@ -17,7 +11,7 @@ class DeltaRequest < ApplicationRecord
     doc = doc_w_name_space.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
     notam_docs = doc.xpath("//AIXMBasicMessage")
     @notam_array = notam_docs.collect do |notam_doc|
-      @notam = self.notams.create()
+      @notam = self.notams.create()             # notams are created even if they are a repeat from the prior delta request.
       @notam.fill(notam_doc)
     end
 

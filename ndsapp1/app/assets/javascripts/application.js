@@ -12,6 +12,6 @@
 //
 //= require rails-ujs
 //= require turbolinks
-//= require Chart.bundle
+// require Chart.bundle   #### took this out to use Google Charts (needed for multiple series)
 //= require chartkick
 //= require_tree .

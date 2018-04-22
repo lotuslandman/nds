@@ -22,8 +22,24 @@ class Notam < ApplicationRecord
     a = []
     # builds array of hashes where index is to be grouped
     DeltaRequest.all.collect { |dr| a << {dr.request_time => dr.notams.size}}
-    aa = a[60..70]
+    aa = a[45..47]
     # takes array of hashes and makes hash
-    aa.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}  
+    aaa = aa.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
+    [{'Apples'=>3, 'Oranges'=>2, 'Strawberries'=>1},
+     {'Red'=>40, 'Brown'=>32, 'Blue'=>21}]
+    [
+      {
+        name: "Fantasy & Sci Fi", 
+        data: [["2010", 10], ["2020", 16], ["2030", 28]]
+      },
+      {
+        name: "Romance", 
+        data: [["2010", 24], ["2020", 22], ["2030", 19]]
+      },
+      {
+        name: "Mystery/Crime", 
+        data: [["2010", 20], ["2020", 23], ["2030", 29]]
+      }
+    ]
   end
 end
