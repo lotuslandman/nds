@@ -14,8 +14,12 @@ class DeltaRequest < ApplicationRecord
       @notam = self.notams.create()             # notams are created even if they are a repeat from the prior delta request.
       @notam.fill(notam_doc)
     end
-
   end
+
+  def scenario_1005_notams
+    self.notams.select{|notam| notam.scenario == '1005'}
+  end
+  
 end
 
 #  def inspect_notams

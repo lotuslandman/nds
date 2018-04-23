@@ -18,28 +18,21 @@ class Notam < ApplicationRecord
     self.delta_request.request_time.to_s
   end
   
-  def self.notams_grouped_by_request_date
-    a = []
+  def self.delta_request_chart
+
+    notams_all = []
+    notams_flt = []
     # builds array of hashes where index is to be grouped
-    DeltaRequest.all.collect { |dr| a << {dr.request_time => dr.notams.size}}
-    aa = a[45..47]
-    # takes array of hashes and makes hash
-    aaa = aa.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
-    [{'Apples'=>3, 'Oranges'=>2, 'Strawberries'=>1},
-     {'Red'=>40, 'Brown'=>32, 'Blue'=>21}]
-    [
-      {
-        name: "Fantasy & Sci Fi", 
-        data: [["2010", 10], ["2020", 16], ["2030", 28]]
-      },
-      {
-        name: "Romance", 
-        data: [["2010", 24], ["2020", 22], ["2030", 19]]
-      },
-      {
-        name: "Mystery/Crime", 
-        data: [["2010", 20], ["2020", 23], ["2030", 29]]
-      }
+    DeltaRequest.all.collect { |dr| notams_all << {dr.request_time => dr.notams.size}}
+    DeltaRequest.all.collect { |dr| notams_flt << {dr.request_time => (dr.scenario_1005_notams.size)}}
+    notams_all_1 = notams_all#[50..60]
+    notams_flt_1 = notams_flt#[50..60]
+    # takes array of hashes and makes hash, flattening allong hash keys
+    notams_all_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
+    notams_flt_2 = notams_flt_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
+    all_notams_w_filtered = [
+      {name: "All Notams", data: notams_all_2},
+      {name: "Filtered Notams", data: notams_flt_2}
     ]
   end
 end
