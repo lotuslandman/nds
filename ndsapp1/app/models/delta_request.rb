@@ -2,6 +2,12 @@ class DeltaRequest < ApplicationRecord
   belongs_to :delta_stream
   has_many :notams, dependent: :destroy
 
+  class << self  # not the best way I'm sure - my version of global variables
+        attr_accessor :start_graph, :end_graph, :scenario
+    end
+
+  @start_graph = 10
+  
   def create_pretty_response_file(file_name)
     self.request_time = file_name
     self.save
@@ -16,8 +22,8 @@ class DeltaRequest < ApplicationRecord
     end
   end
 
-  def scenario_1005_notams
-    self.notams.select{|notam| notam.scenario == '1005'}
+  def scenario_notams(scenario)
+    self.notams.select{|notam| notam.scenario == scenario}
   end
   
 end

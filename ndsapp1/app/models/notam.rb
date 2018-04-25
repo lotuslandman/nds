@@ -18,15 +18,17 @@ class Notam < ApplicationRecord
     self.delta_request.request_time.to_s
   end
   
-  def self.delta_request_chart
+  def self.delta_request_chart(st, en, scenario)
 
     notams_all = []
     notams_flt = []
     # builds array of hashes where index is to be grouped
     DeltaRequest.all.collect { |dr| notams_all << {dr.request_time => dr.notams.size}}
-    DeltaRequest.all.collect { |dr| notams_flt << {dr.request_time => (dr.scenario_1005_notams.size)}}
-    notams_all_1 = notams_all#[50..60]
-    notams_flt_1 = notams_flt#[50..60]
+    DeltaRequest.all.collect { |dr| notams_flt << {dr.request_time => (dr.scenario_notams(scenario).size)}}
+    #    notams_all_1 = notams_all[50..60]
+    #    notams_flt_1 = notams_flt[50..60]
+    notams_all_1 = notams_all[st..en]
+    notams_flt_1 = notams_flt[st..en]
     # takes array of hashes and makes hash, flattening allong hash keys
     notams_all_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
     notams_flt_2 = notams_flt_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}

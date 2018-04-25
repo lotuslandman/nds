@@ -1,0 +1,11 @@
+<h1>Graph Test Environment Delta Requests by Hour</h1>
+<%= javascript_include_tag "https://www.gstatic.com/charts/loader.js" %>
+<% DeltaStream.update_database %>
+<%= column_chart Notam.group(:scenario).count %>
+<%= column_chart Notam.delta_request_chart %>
+
+<%= form_for @article, url: {action: "create"}, html: {class: "nifty_form"} do |f| %>
+  <%= f.text_field :title %>
+  <%= f.text_area :body, size: "60x12" %>
+  <%= f.submit "Create" %>
+<% end %>

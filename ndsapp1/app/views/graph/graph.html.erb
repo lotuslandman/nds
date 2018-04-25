@@ -1,0 +1,22 @@
+<h1>Graph Test Environment Delta Requests by Hour</h1>
+<%= javascript_include_tag "https://www.gstatic.com/charts/loader.js" %>
+<%= column_chart Notam.group(:scenario).count %>
+
+<%    st = params[:start_graph].to_i * -1 %>
+<%    en = params[:end_graph].to_i * -1 %>
+<%    scenario  = params[:scenario] %>
+
+<%= column_chart Notam.delta_request_chart(st, en, scenario)  %>
+
+<%= form_tag(controller: "graph", action: "graph", method: "get") do %>
+  <%= label_tag(:q, "Start:") %>
+  <%= text_field_tag(:start_graph) %>
+  <%= label_tag(:q, "End:") %>
+  <%= text_field_tag(:end_graph) %>
+  <%= label_tag(:q, "Scenario:") %>
+  <%= text_field_tag(:scenario) %>
+  <%= submit_tag("Submit") %>
+<% end %>
+<h1> Start Hours ago: <%= st %> <h1> 
+<h1> End Hours ago: <%= en %> <h1> 
+<h1> Scenario: <%= scenario %> <h1> 
