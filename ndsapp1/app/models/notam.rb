@@ -33,8 +33,8 @@ class Notam < ApplicationRecord
     notams_all_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
     notams_flt_2 = notams_flt_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
     all_notams_w_filtered = [
-      {name: "All Notams", data: notams_all_2},
-      {name: "Filtered Notams", data: notams_flt_2}
+      {name: "Blue Filtered Notams", data: notams_all_2},
+      {name: "Red Filtered Notams", data: notams_flt_2}
     ]
   end
 end

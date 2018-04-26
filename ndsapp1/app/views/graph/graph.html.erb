@@ -1,6 +1,8 @@
-<h1>Graph Test Environment Delta Requests by Hour</h1>
+<h3>Test Environment (2nd fl) --- <a href="url">FNTB .81 environment</a>   ---  <a href="url">Production Environment</a></h3>
+<h3>Delta Requests --- <a href="url">Bulk Requests</a>   ---  <a href="url">Transaction Id Requests</a></h3>
+<h3>by Hour --- <a href="scenario">by Scenario</a></h3>
+
 <%= javascript_include_tag "https://www.gstatic.com/charts/loader.js" %>
-<%= column_chart Notam.group(:scenario).count %>
 
 <%    st = params[:start_graph].to_i * -1 %>
 <%    en = params[:end_graph].to_i * -1 %>
@@ -17,6 +19,81 @@
   <%= text_field_tag(:scenario) %>
   <%= submit_tag("Submit") %>
 <% end %>
-<h1> Start Hours ago: <%= st %> <h1> 
-<h1> End Hours ago: <%= en %> <h1> 
-<h1> Scenario: <%= scenario %> <h1> 
+<h4 style="color:silver">Date Range:</h4>
+  <table style="width:100">
+    <colgroup>
+      <col style="background-color: silver">
+      <col style="background-color: silver">
+    </colgroup>
+  <tr>
+    <th>Start Range (hours back)</th>
+    <th>End Range (hours back)</th> 
+  </tr>
+  <tr>
+    <td><i><%= (-1*st).to_s %></i> </td> 
+    <td><i><%= (-1*en).to_s %></i> </td> 
+  </tr>
+</table>
+<h4 style="color:blue">Blue FILTER BY:</h4>
+  <table style="width:100">
+    <colgroup>
+      <col style="background-color: silver">
+      <col style="background-color: silver">
+    </colgroup>
+  <tr>
+    <th>Filter</th>
+    <th>Filter Status</th> 
+  </tr>
+  <tr>
+    <td>Scenario</td>
+    <td><i>None</i> </td> 
+  </tr>
+  <tr>
+    <td>xsi:nil="true" present</td>
+    <td><i>No</i> </td> 
+  </tr>
+  <tr>
+    <td>bad href with #</td>
+    <td><i>No</i> </td> 
+  </tr>
+  <tr>
+    <td>href missing pointer</td>
+    <td><i>No</i> </td> 
+  </tr>
+  <tr>
+    <td>FICON</td>
+    <td><i>No</i> </td> 
+  </tr>
+</table>
+
+<h4 style="color:red">Red FILTER BY:</h4>
+  <table style="width:100">
+    <colgroup>
+      <col style="background-color: silver">
+      <col style="background-color: silver">
+    </colgroup>
+  <tr>
+    <th>Filter</th>
+    <th>Filter Status</th> 
+  </tr>
+  <tr>
+    <td>Scenario</td>
+    <td><i><%= scenario %> </i> </td> 
+  </tr>
+  <tr>
+    <td>xsi:nil="true" present</td>
+    <td><i>No</i> </td> 
+  </tr>
+  <tr>
+    <td>bad href with #</td>
+    <td><i>No</i> </td> 
+  </tr>
+  <tr>
+    <td>href missing pointer</td>
+    <td><i>No</i> </td> 
+  </tr>
+  <tr>
+    <td>FICON</td>
+    <td><i>No</i> </td> 
+  </tr>
+</table>
