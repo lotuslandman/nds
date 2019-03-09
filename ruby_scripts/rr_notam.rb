@@ -122,8 +122,9 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
 end
 
 def find_time_over_ten_minutes_ago_as_string
-  hours_ago = 2   # start at 10 hours ago
-  time_range = hours_ago * 60 * 60 # convert hours to seconds
+#  hours_ago = 2   # start at 10 hours ago
+#  time_range = hours_ago * 60 * 60 # convert hours to seconds
+  time_range = 6 * 60  # 6 minutes ago
   t = Time.now - time_range
   t.strftime "%Y-%m-%dT%H:%M:%S"
 end

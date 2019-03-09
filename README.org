@@ -1,0 +1,16 @@
+* environment
+** rbenv global 2.2.2 - brings back to version of ruby used to develop application (tried 2.5 to try something out)
+* git
+** Working off git commit "Demo to Hoon Blue & Red Filters"
+* todos
+** clean up git repository
+** copy over other droplets rr_notam_dod.rb to here (so I have code for both 3-minute deltas for DoD captured here as well)
+** document the cron job set up for rr_notam.rb
+* cron
+** The following is a crontab that succesfully calls the rr_notam.rb script every 3 minutes (regardless of how long it takes to return)
+	
+	PATH=/home/scott/bin:/home/scott/.local/bin:/home/scott/.rbenv/shims:/home/scott/.rbenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/scott/development/FNTB_NIRU3/FNS
+	SHELL=/bin/bash
+	HOME=/home/scott/development/nds/
+	#  m   h  dom mon dow   command
+	#   */3 *    *   *   *   /home/scott/.rbenv/shims/ruby /home/scott/development/nds/ruby_scripts/rr_notam.rb >> /home/scott/development/nds/file.log
