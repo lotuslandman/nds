@@ -8,3 +8,4 @@ files_delta
 /file.log
 files_delta_pretty/
 files_delta_sample/
+stream_files/
