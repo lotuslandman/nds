@@ -7,18 +7,33 @@ class DeltaRequest < ApplicationRecord
     end
 
   @start_graph = 10
+
+  def store_response_timing(response_time)
+    rts = response_time.split(',')
+    start_time = rts[0].strip
+    end_time = rts[1].strip
+    duration = rts[2].strip.to_f
+    self.start_time = start_time
+    self.end_time = end_time
+    self.duration = duration
+    self.save
+  end
   
   def create_pretty_response_file(file_name)   #### !!!!!!! WARNING Hardcoded stream 3  #######
     self.request_time = file_name
     self.save
-    fn = 'delta_'+file_name.sub(" UTC","").split(' ').join('T')+'.xml'
-    @response = File.read('/home/scott/dev/nds/stream_files/stream_3_files/2019-3/files_delta/'+fn)
+    fn_frag = file_name.sub(" UTC","").split(' ').join('T')
+    fn_f = 'delta_'+fn_frag+'.xml'
+    fn_t = 'delta_'+fn_frag+'_time.xml'
+    @response      = File.read('/home/scott/dev/nds/stream_files/stream_3_files/2019-3/files_delta/'+fn_f)
+    response_time = File.read('/home/scott/dev/nds/stream_files/stream_3_files/2019-3/files_delta_time/'+fn_t)
+    store_response_timing(response_time)
     doc_w_name_space = pretty_response = Nokogiri::XML(@response) { |config| config.strict }
     doc = doc_w_name_space.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
     notam_docs = doc.xpath("//AIXMBasicMessage")
     @notam_array = notam_docs.collect do |notam_doc|
       @notam = self.notams.create()             # notams are created even if they are a repeat from the prior delta request.
-      @notam.fill(notam_doc)
+      @notam.fill(notam_doc)                    # fills the database fields with things extracted from the Nokogiri document
     end
   end
 

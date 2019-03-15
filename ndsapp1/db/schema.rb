@@ -10,14 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180419031003) do
+ActiveRecord::Schema.define(version: 20190315012758) do
 
   create_table "delta_requests", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8" do |t|
     t.datetime "request_time"
     t.bigint "delta_stream_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.float "duration", limit: 24
+    t.datetime "start_time"
+    t.datetime "end_time"
     t.index ["delta_stream_id"], name: "index_delta_requests_on_delta_stream_id"
+    t.index ["start_time"], name: "index_delta_requests_on_start_time"
   end
 
   create_table "delta_streams", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8" do |t|

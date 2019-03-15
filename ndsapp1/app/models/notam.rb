@@ -23,7 +23,8 @@ class Notam < ApplicationRecord
     notams_all = []
     notams_flt = []
     # builds array of hashes where index is to be grouped
-    DeltaRequest.all.collect { |dr| notams_all << {dr.request_time => dr.notams.size}}
+    DeltaRequest.all.collect { |dr| notams_all << {dr.request_time => dr.duration}}
+#    DeltaRequest.all.collect { |dr| notams_all << {dr.request_time => dr.notams.size}}
     DeltaRequest.all.collect { |dr| notams_flt << {dr.request_time => (dr.scenario_notams(scenario).size)}}
     #    notams_all_1 = notams_all[50..60]
     #    notams_flt_1 = notams_flt[50..60]
