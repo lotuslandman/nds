@@ -31,10 +31,13 @@ class DeltaRequest < ApplicationRecord
     doc_w_name_space = pretty_response = Nokogiri::XML(@response) { |config| config.strict }
     doc = doc_w_name_space.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
     notam_docs = doc.xpath("//AIXMBasicMessage")
-    @notam_array = notam_docs.collect do |notam_doc|
-      @notam = self.notams.create()             # notams are created even if they are a repeat from the prior delta request.
-      @notam.fill(notam_doc)                    # fills the database fields with things extracted from the Nokogiri document
-    end
+    a = Time.now
+#    @notam_array = notam_docs.collect do |notam_doc|
+#      @notam = self.notams.create()             # notams are created even if they are a repeat from the prior delta request.
+#      @notam.fill(notam_doc)                    # fills the database fields with things extracted from the Nokogiri document
+#    end
+    b = Time.now
+    puts "creating all the NOTAMs for a request took: #{b-a} seconds"
   end
 
   def scenario_notams(scenario)

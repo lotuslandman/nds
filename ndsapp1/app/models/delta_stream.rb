@@ -12,6 +12,7 @@ class DeltaStream < ApplicationRecord
   end
   
   def fill_database
+    puts 'top of fill_database'
     request_type  = :delta
     file_name_array = get_filenames.sort.each do |file_name|
       file_name.split("delta")[2].split('.')[0][1..-1]
@@ -21,11 +22,16 @@ class DeltaStream < ApplicationRecord
     end
     date_array_from_database  = DeltaRequest.all.collect { |dr| dr.request_time.to_s}
     dates_to_get = date_array_from_filesystem - date_array_from_database
-#    puts "Topping of database with #{dates_to_get.size} delta_requests"
+    puts "Topping of database with #{dates_to_get.size} delta_requests"
+    loop = 0
     dates_to_get.collect do |file_name|
-      @delta_request = self.delta_requests.create()  # create new delta_requst from this delta_stream
-#      @delta_request.store_response_timing(file_name)  # 
+      puts "#{loop}: getting #{file_name}"
+      @delta_request = self.delta_requests.create()  # create new delta_request from this delta_stream
+      a = Time.now
       @delta_request.create_pretty_response_file(file_name)
+      b = Time.now
+      puts "Time for full loop took #{b-a} seconds"
+      loop += 1
     end
   end
 
