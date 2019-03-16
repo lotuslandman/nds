@@ -31,5 +31,7 @@ rbenv global 2.5 - brings back to version of ruby used to develop application (t
 ** copy over other droplets rr_notam_dod.rb to here (so I have code for both 3-minute deltas for DoD captured here as well)
 ** change so stream is not hardcoded (currently doing stream 3 only for testing)
 ** put back in 4 commented out lines in delta_request.rb that is what slows down the fill of the database
-
-
+** put in ability to add dates instead of indexes of an array
+** remove hardcoded /home/scott/...
+** Why is delta_request_chart in so many places?  I'm trying to move it from a Notam class method to a delta_stream method 
+   (so I can graph only the streams requests)

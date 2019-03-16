@@ -12,7 +12,7 @@ module Ndsapp1
     config.load_defaults 5.1
 
     config.after_initialize do
-      DeltaStream.update_database
+#      DeltaStream.update_database
     end
 
     # Settings in config/environments/* take precedence over those specified here.

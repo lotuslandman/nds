@@ -1,14 +1,14 @@
-<h3>Test Environment (2nd fl) --- <a href="url">FNTB .81 environment</a>   ---  <a href="url">Production Environment</a></h3>
-<h3>Delta Requests --- <a href="url">Bulk Requests</a>   ---  <a href="url">Transaction Id Requests</a></h3>
-<h3>by Hour --- <a href="scenario">by Scenario</a></h3>
+
+<h1>Display:
+<%= "FNTB (.75)" if session[:env] == "fntb" %>
+<%= "Production (OEX)" if session[:env] == "prod" %>
+<%= "FNTB (small test set)" if session[:env] == "fntb_test" %>
+</h1> Change (<a href="fntb">FNTB</a> <a href="prod">Production</a> <a href="fntb_test">FNTB testset</a>)
 
 <%= javascript_include_tag "https://www.gstatic.com/charts/loader.js" %>
 
-<%    st = params[:start_graph].to_i * -1 %>
-<%    en = params[:end_graph].to_i * -1 %>
-<%    scenario  = params[:scenario] %>
-
-<%= column_chart Notam.delta_request_chart(st, en, scenario)  %>
+<% scenario  = params[:scenario] %>
+<%= column_chart @ds.delta_request_chart(@st, @en, scenario)  %>
 
 <%= form_tag(controller: "graph", action: "graph", method: "get") do %>
   <%= label_tag(:q, "Start:") %>
@@ -30,8 +30,8 @@
     <th>End Range (hours back)</th> 
   </tr>
   <tr>
-    <td><i><%= (-1*st).to_s %></i> </td> 
-    <td><i><%= (-1*en).to_s %></i> </td> 
+    <td><i><%= (-1*@st).to_s %></i> </td> 
+    <td><i><%= (-1*@en).to_s %></i> </td> 
   </tr>
 </table>
 <h4 style="color:blue">Blue FILTER BY:</h4>

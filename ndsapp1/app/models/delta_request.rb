@@ -18,26 +18,26 @@ class DeltaRequest < ApplicationRecord
     self.duration = duration
     self.save
   end
+
   
-  def create_pretty_response_file(file_name)   #### !!!!!!! WARNING Hardcoded stream 3  #######
+  def create_pretty_response_file(file_name)   
     self.request_time = file_name
     self.save
     fn_frag = file_name.sub(" UTC","").split(' ').join('T')
     fn_f = 'delta_'+fn_frag+'.xml'
     fn_t = 'delta_'+fn_frag+'_time.xml'
-    @response      = File.read('/home/scott/dev/nds/stream_files/stream_3_files/2019-3/files_delta/'+fn_f)
-    response_time = File.read('/home/scott/dev/nds/stream_files/stream_3_files/2019-3/files_delta_time/'+fn_t)
+    stream_number = self.delta_stream.id
+    full_response_file_dir = "/home/scott/dev/nds/stream_files/stream_#{stream_number.to_s}_files/2019-3/files_delta"
+    @response     = File.read(full_response_file_dir+"/"+fn_f)
+    response_time = File.read(full_response_file_dir+"_time/"+fn_t)
     store_response_timing(response_time)
     doc_w_name_space = pretty_response = Nokogiri::XML(@response) { |config| config.strict }
     doc = doc_w_name_space.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
     notam_docs = doc.xpath("//AIXMBasicMessage")
-    a = Time.now
-#    @notam_array = notam_docs.collect do |notam_doc|
+#    @notam_array = notam_docs.collect do |notam_doc|  # uncomment 4 lines so scenario and other NOTAM specific fns work
 #      @notam = self.notams.create()             # notams are created even if they are a repeat from the prior delta request.
 #      @notam.fill(notam_doc)                    # fills the database fields with things extracted from the Nokogiri document
 #    end
-    b = Time.now
-    puts "creating all the NOTAMs for a request took: #{b-a} seconds"
   end
 
   def scenario_notams(scenario)
