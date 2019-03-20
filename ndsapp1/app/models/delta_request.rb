@@ -2,11 +2,11 @@ class DeltaRequest < ApplicationRecord
   belongs_to :delta_stream
   has_many :notams, dependent: :destroy
 
-  class << self  # not the best way I'm sure - my version of global variables
-        attr_accessor :start_graph, :end_graph, :scenario
-    end
-
-  @start_graph = 10
+#  class << self  # not the best way I'm sure - my version of global variables
+#        attr_accessor :start_graph, :end_graph, :scenario
+#    end
+#
+#  @start_graph = 10
 
   def store_response_timing(response_time)
     rts = response_time.split(',')
@@ -18,9 +18,10 @@ class DeltaRequest < ApplicationRecord
     self.duration = duration
     self.save
   end
-
   
-  def create_pretty_response_file(file_name)   
+  def create_pretty_response_file(file_name)
+    path = "/home/scott/dev/nds/ndsapp1/llog.txt"
+
     self.request_time = file_name
     self.save
     fn_frag = file_name.sub(" UTC","").split(' ').join('T')
@@ -30,6 +31,8 @@ class DeltaRequest < ApplicationRecord
     full_response_file_dir = "/home/scott/dev/nds/stream_files/stream_#{stream_number.to_s}_files/2019-3/files_delta"
     @response     = File.read(full_response_file_dir+"/"+fn_f)
     response_time = File.read(full_response_file_dir+"_time/"+fn_t)
+#    File.open(path, 'w') { |rf| rf.puts "Stream: #{stream_number} --- response_time: #{response_time}"} 
+
     store_response_timing(response_time)
     doc_w_name_space = pretty_response = Nokogiri::XML(@response) { |config| config.strict }
     doc = doc_w_name_space.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
@@ -45,10 +48,3 @@ class DeltaRequest < ApplicationRecord
   end
   
 end
-
-#  def inspect_notams
-#    @notam_array.collect do |nd|
-#      puts "transaction ID: #{nd.trans_id}, scenario: #{nd.scenario}, xsi_nil_issue?: #{nd.xsi_nil_present}, endPoistion: #{nd.begin_position}"
-#    end      
-#  end
-#end

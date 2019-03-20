@@ -1,9 +1,11 @@
+require 'time'
+
 class GraphController < ApplicationController
 
-  def stream_to_environment_map
+  def environment_to_stream_map
     case session[:env]
     when "fntb"
-      1
+      1   # these are the stream ids
     when "prod"
       2
     when "fntb_test"
@@ -13,37 +15,58 @@ class GraphController < ApplicationController
     end
   end
 
+  def update_database_for_all_streams
+#    @delta_stream_1 = DeltaStream.find_by_id(1)
+#    @delta_stream_1 ||= DeltaStream.create(id: 1, frequency_minutes: 3, delta_reachback: 6)  
+#    @delta_stream_1.fill_database
+    
+    @delta_stream_2 = DeltaStream.find_by_id(2)
+    @delta_stream_2 ||= DeltaStream.create(id: 2, frequency_minutes: 3, delta_reachback: 6)  
+    @delta_stream_2.fill_database
+    
+#    @delta_stream_3 = DeltaStream.find_by_id(3)
+#    @delta_stream_3 ||= DeltaStream.create(id: 3, frequency_minutes: 3, delta_reachback: 6)  
+#    @delta_stream_3.fill_database
+  end
+
   def graph
-    @ds = DeltaStream.find_by_id(stream_to_environment_map)
-    DeltaStream.update_database_for_all_streams
+    update_database_for_all_streams
+    @ds = DeltaStream.find_by_id(environment_to_stream_map)
+
+    start_date_string = params[:start_graph] 
+    start_date_string ||= session[:start_date]  # assumes session is string
+    @start_date_string = start_date_string
+
+    end_date_string = params[:end_graph] 
+    end_date_string ||= session[:end_date]  # assumes session is string
+    @end_date_string = end_date_string
+    
+    session[:start_date] = start_date_string
+    session[:end_date] = end_date_string
+    
+    @scenario  = params[:scenario]  # if no scenario entered no need to store
+    @y_axis = session[:y_axis]
+    @get_column_chart_data = @ds.column_chart_data(@start_date_string, @end_date_string, @scenario, @y_axis) 
+  end
+
+#  def scenario
+#    @ds = DeltaStream.find_by_id(stream_to_environment_map)
+#    DeltaStream.update_database_for_all_streams
 #    st = params[:start_graph].to_i * -1
 #    en = params[:end_graph].to_i * -1
+#    scenario  = params[:scenario]
+#  end
 
-#    st = params[:start_graph]
-#    st ||= session[:start_date]
-#    @st = st.to_i * -1
-
-    @st = params[:start_graph] ||= session[:start_date]
-    session[:start_date] = @st
-    @st = @st.to_i * -1
-
-    @en = params[:end_graph] ||= session[:end_date]
-    session[:end_date] = @en
-    @en = @en.to_i * -1
-    
-    scenario  = params[:scenario]
-#    x = ds.delta_request_chart(st, en, scenario)
+  def response_time
+    session[:y_axis] = "response_time"
+    redirect_to :action => "graph"
   end
-
-  def scenario
-    @ds = DeltaStream.find_by_id(stream_to_environment_map)
-    DeltaStream.update_database_for_all_streams
-    st = params[:start_graph].to_i * -1
-    en = params[:end_graph].to_i * -1
-    scenario  = params[:scenario]
-#    x = ds.delta_request_chart(st, en, scenario)
+  
+  def number_of_notams
+    session[:y_axis] = "number_of_notams"
+    redirect_to :action => "graph"
   end
-
+  
   def prod
     session[:env] = "prod"
     redirect_to :action => "graph"

@@ -12,5 +12,10 @@ Rails.application.routes.draw do
   post 'graph/fntb'
   get 'graph/fntb_test'
   post 'graph/fntb_test'
-  # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
+
+  get 'graph/response_time'
+  post 'graph/response_time'
+  get 'graph/number_of_notams'
+  post 'graph/number_of_notams'
+# For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
 end

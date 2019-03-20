@@ -34,7 +34,7 @@ class Notam
 end
 
 class RequestResponse   # Will create the appropriate request.xml file for the curl command and capture the output in response.xml
-  attr_reader :endpoint, :username, :password, :request_type, :trans_id, :delta_date, :request_xml, :response, :pretty_response, :delta_file_name, :delta_file_name_pretty, :delta_file_name_time, :fns_id_array, :scenario_ids, :notam_array
+  attr_reader :endpoint, :username, :password, :request_type, :trans_id, :delta_start_date, :delta_end_date, :request_xml, :response, :pretty_response, :delta_file_name, :delta_file_name_pretty, :delta_file_name_time, :fns_id_array, :scenario_ids, :notam_array
 
   def initialize(params = {})    #endpoint, username, password, request_type
     @username     = params.fetch(:username, '')
@@ -42,7 +42,8 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     @endpoint     = params.fetch(:endpoint, '')
     @request_type = params.fetch(:request_type, '')    # only one to have a default
     @trans_id     = params.fetch(:trans_id, '')        # this should be in NOTAM only and not here
-    @delta_date   = params.fetch(:delta_date, '')
+    @delta_start_date = params.fetch(:delta_start_date, '')
+    @delta_end_date = params.fetch(:delta_end_date, '')
   end
 
   def xml_request_template
@@ -75,7 +76,7 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     when :by_trans_id
       @request_xml = xrt2.sub "REQUEST",  "<fes:ResourceId rid=\"#{trans_id.to_s}\"/>"
     when :delta
-      @request_xml = xrt2.sub "REQUEST",  "<fes:Function name=\"SearchByLastUpdateDate\"><fes:Literal>#{delta_date.to_s}</fes:Literal></fes:Function>"
+      @request_xml = xrt2.sub "REQUEST",  "<fes:Function name=\"SearchByLastUpdateDate\"><fes:Literal>#{delta_start_date.to_s}</fes:Literal></fes:Function>"
     when :bulk
     else
       puts "Request must be of type :bulk, :delta, or :transaction_id"
@@ -110,9 +111,9 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     create_dir(stream_files_env_month_delta_pretty)
     create_dir(stream_files_env_month_delta_time)
 
-    @delta_file_name        = stream_files_env_month_delta + "delta_#{self.delta_date}.xml"
-    @delta_file_name_pretty = stream_files_env_month_delta_pretty + "delta_#{self.delta_date}_pretty.xml"
-    @delta_file_name_time   = stream_files_env_month_delta_time + "delta_#{self.delta_date}_time.xml"
+    @delta_file_name        = stream_files_env_month_delta + "delta_#{self.delta_end_date}.xml"
+    @delta_file_name_pretty = stream_files_env_month_delta_pretty + "delta_#{self.delta_end_date}_pretty.xml"
+    @delta_file_name_time   = stream_files_env_month_delta_time + "delta_#{self.delta_end_date}_time.xml"
     curl_command_1 = 'curl --silent --insecure -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction:"  -d @'+request_path+' -X POST END_POINT > '+@delta_file_name
     curl_command = curl_command_1.sub("END_POINT",self.endpoint)
     start_delta_time = Time.now
@@ -120,6 +121,7 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     end_delta_time = Time.now
     duration = end_delta_time - start_delta_time
     File.open(@delta_file_name_time, 'w') { |rf| rf.puts "#{start_delta_time}, #{end_delta_time}, #{duration}"}
+    puts "#{start_delta_time},#{end_delta_time},#{duration}"
   end
 
   def create_pretty_response_file
@@ -147,8 +149,11 @@ def find_delta_start_date(delta_pull_duration)
 #  hours_ago = 2   # start at 10 hours ago
 #  time_range = hours_ago * 60 * 60 # convert hours to seconds
   time_range = delta_pull_duration * 60  # make into seconds
-  t = Time.now - time_range
-  t.strftime "%Y-%m-%dT%H:%M:%S"
+  end_time = Time.now
+  start_time = end_time - time_range
+  st = start_time.strftime "%Y-%m-%dT%H:%M:%S"
+  et = end_time.strftime "%Y-%m-%dT%H:%M:%S"
+  [st, et]
 end
 
 request_path = "temporary/request#{stream}.xml"
@@ -159,10 +164,8 @@ password = system_information[:password]
 endpoint = system_information[:endpoint]
 
 transaction_id      = "" # for 2nd floor test
-delta_date = find_delta_start_date(delta_pull_duration)
-req = RequestResponse.new(:endpoint => endpoint, :username => username, :password => password, :request_type => request_type, :trans_id => transaction_id, :delta_date => delta_date)
+delta_start_date, delta_end_date = find_delta_start_date(delta_pull_duration)
+req = RequestResponse.new(:endpoint => endpoint, :username => username, :password => password, :request_type => request_type, :trans_id => transaction_id, :delta_start_date => delta_start_date,  :delta_end_date => delta_end_date)
 req.create_request_xml_file(request_path)
-req.create_response_file(request_path, env, stream)
+duration = req.create_response_file(request_path, env, stream)
 req.create_pretty_response_file
-#req.inspect_notams
-puts delta_date

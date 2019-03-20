@@ -7,7 +7,7 @@
 stream              =  3
 env                 =  "fntb"
 request_type        = :delta
-delta_pull_duration =  6 # ARGV[0].to_i # 6 minutes ago
+delta_pull_duration =  60*24 # ARGV[0].to_i # 6 minutes ago  # not quite 72 hours ago
 
 require 'rubygems'
 require 'pry'
