@@ -1,8 +1,0 @@
-class Notam < ApplicationRecord
-  belongs_to :delta_request
-
-  def hi
-    puts 'hi there'
-  end
-  
-end

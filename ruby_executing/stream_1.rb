@@ -17,21 +17,21 @@ require 'fileutils'
 require 'pony'
 require 'time'
 
-class Notam
-  attr_reader :notam_doc, :trans_id, :scenario, :xsi_nil_present, :begin_position, :end_position, :time_position
-
-  def initialize(notam_doc)
-    @notam_doc = notam_doc   # this will be a Nokogiri node (or a Nokogiri document with pointer to node) need to search relative from here
-    @trans_id = self.notam_doc.attr('id')
-    @scenario = self.notam_doc.xpath(".//scenario/text()")
-    @begin_position = self.notam_doc.xpath(".//beginPosition/text()")
-    @end_position = self.notam_doc.xpath(".//endPosition/text()")
-    @time_position = self.notam_doc.xpath(".//timePosition/text()")
-    xsi_nil_list = self.notam_doc.xpath(".//*[@nil='true'][text()]")
-    @xsi_nil_present = xsi_nil_list.size > 0
-    #    @fns_id_array = notams.collect { |notam| notam.attr('id') }
-  end
-end
+#class Notam
+#  attr_reader :notam_doc, :trans_id, :scenario, :xsi_nil_present, :begin_position, :end_position, :time_position
+#
+#  def initialize(notam_doc)
+#    @notam_doc = notam_doc   # this will be a Nokogiri node (or a Nokogiri document with pointer to node) need to search relative from here
+#    @trans_id = self.notam_doc.attr('id')
+#    @scenario = self.notam_doc.xpath(".//scenario/text()")
+#    @begin_position = self.notam_doc.xpath(".//beginPosition/text()")
+#    @end_position = self.notam_doc.xpath(".//endPosition/text()")
+#    @time_position = self.notam_doc.xpath(".//timePosition/text()")
+#    xsi_nil_list = self.notam_doc.xpath(".//*[@nil='true'][text()]")
+#    @xsi_nil_present = xsi_nil_list.size > 0
+#    #    @fns_id_array = notams.collect { |notam| notam.attr('id') }
+#  end
+#end
 
 class RequestResponse   # Will create the appropriate request.xml file for the curl command and capture the output in response.xml
   attr_reader :endpoint, :username, :password, :request_type, :trans_id, :delta_start_date, :delta_end_date, :request_xml, :response, :pretty_response, :delta_file_name, :delta_file_name_pretty, :delta_file_name_time, :fns_id_array, :scenario_ids, :notam_array
@@ -72,14 +72,15 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     xrt1 = xml_request_template.sub "USERNAME",  @username
     xrt2 = xrt1.sub "PASSWORD", @password
 
-    case self.request_type
-    when :by_trans_id
+    case self.request_type    # The keyword "REQUEST" is replaced by request type-specific xml
+    when :by_trans_id  # will implement this latter perhaps
       @request_xml = xrt2.sub "REQUEST",  "<fes:ResourceId rid=\"#{trans_id.to_s}\"/>"
     when :delta
       @request_xml = xrt2.sub "REQUEST",  "<fes:Function name=\"SearchByLastUpdateDate\"><fes:Literal>#{delta_start_date.to_s}</fes:Literal></fes:Function>"
-    when :bulk
+    when :bulk         # will implement this latter perhaps
     else
       puts "Request must be of type :bulk, :delta, or :transaction_id"
+      exit
     end
     File.open(request_path, 'w') { |rf| rf.puts request_xml}  # make the file xml_request
     ''
@@ -100,9 +101,8 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
 
     t = Time.now
     month_string_path = "#{t.year}-#{t.month}/"
-#    month_string_path = "#{t.year}-#{t.month}-#{t.day}-#{t.hour}-#{t.min}/"
     stream_files_env_month_path = stream_files_env_path + month_string_path
-    create_dir(stream_files_env_month_path)
+    create_dir(stream_files_env_month_path)    # third level "stream_files/fntb_stream_files/2019-03/"
 
     stream_files_env_month_delta = stream_files_env_month_path + "files_delta/"
     stream_files_env_month_delta_pretty = stream_files_env_month_path + "files_delta_pretty/"
@@ -124,17 +124,17 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     puts "#{start_delta_time},#{end_delta_time},#{duration}"
   end
 
-  def create_pretty_response_file
-    @response = File.read(self.delta_file_name)
-    pretty_response = Nokogiri::XML(@response) { |config| config.strict }
-    @pretty_response = pretty_response
-    File.open(@delta_file_name_pretty, 'w') { |rf| rf.puts pretty_response}
-    doc = pretty_response.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
-    notam_docs = doc.xpath("//AIXMBasicMessage")
-    @notam_array = notam_docs.collect do |notam|
-      Notam.new(notam)
-    end
-  end
+#  def create_pretty_response_file
+#    @response = File.read(self.delta_file_name)
+#    pretty_response = Nokogiri::XML(@response) { |config| config.strict }
+#    @pretty_response = pretty_response
+#    File.open(@delta_file_name_pretty, 'w') { |rf| rf.puts pretty_response}
+#    doc = pretty_response.remove_namespaces!   # seems to be necessary for Nokogiri - simplifies XPATH statements too
+#    notam_docs = doc.xpath("//AIXMBasicMessage")
+#    @notam_array = notam_docs.collect do |notam|
+#      Notam.new(notam)
+#    end
+#  end
 
   def inspect_notams
     puts "notam_array.size #{notam_array.size}"
@@ -146,8 +146,6 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
 end
 
 def find_delta_start_date(delta_pull_duration)
-#  hours_ago = 2   # start at 10 hours ago
-#  time_range = hours_ago * 60 * 60 # convert hours to seconds
   time_range = delta_pull_duration * 60  # make into seconds
   end_time = Time.now
   start_time = end_time - time_range
@@ -168,4 +166,4 @@ delta_start_date, delta_end_date = find_delta_start_date(delta_pull_duration)
 req = RequestResponse.new(:endpoint => endpoint, :username => username, :password => password, :request_type => request_type, :trans_id => transaction_id, :delta_start_date => delta_start_date,  :delta_end_date => delta_end_date)
 req.create_request_xml_file(request_path)
 duration = req.create_response_file(request_path, env, stream)
-req.create_pretty_response_file
+# req.create_pretty_response_file

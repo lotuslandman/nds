@@ -15,22 +15,9 @@ class GraphController < ApplicationController
     end
   end
 
-  def update_database_for_all_streams
-#    @delta_stream_1 = DeltaStream.find_by_id(1)
-#    @delta_stream_1 ||= DeltaStream.create(id: 1, frequency_minutes: 3, delta_reachback: 6)  
-#    @delta_stream_1.fill_database
-    
-    @delta_stream_2 = DeltaStream.find_by_id(2)
-    @delta_stream_2 ||= DeltaStream.create(id: 2, frequency_minutes: 3, delta_reachback: 6)  
-    @delta_stream_2.fill_database
-    
-#    @delta_stream_3 = DeltaStream.find_by_id(3)
-#    @delta_stream_3 ||= DeltaStream.create(id: 3, frequency_minutes: 3, delta_reachback: 6)  
-#    @delta_stream_3.fill_database
-  end
 
   def graph
-    update_database_for_all_streams
+#    update_database_for_all_streams
     @ds = DeltaStream.find_by_id(environment_to_stream_map)
 
     start_date_string = params[:start_graph] 

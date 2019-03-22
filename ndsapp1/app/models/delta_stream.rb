@@ -11,29 +11,37 @@ class DeltaStream < ApplicationRecord
     out = Dir.glob("/home/scott/dev/nds/stream_files/stream_#{stream_number.to_s}_files/2019-3/files_delta/*").sort.collect do |fnp|
       '../files_delta/'+File.basename(fnp)  # have to back out of rails directory with ../
     end
-#    out[-300..-1]
   end
   
-  def fill_database
+#    File.open(path, 'w') { |rf| rf.puts "Top DB for DS #{self.id} with #{dates_to_get.size} (#{date_array_from_filesystem.size}-#{date_array_from_database.size}) delta_requests"}
+
+  def create_pretty_response_file_and_fill_database
     path = "/home/scott/dev/nds/ndsapp1/llog.txt"
     request_type  = :delta
+    # go into the filesystem ".../.../files_delta/" and find all responses  WARNING: get_filenames hardcoded to March 2019
     file_name_array = get_filenames.sort.each do |file_name|
       file_name.split("delta")[2].split('.')[0][1..-1]
     end
     date_array_from_filesystem = file_name_array.collect do |fn|
       extract_date(fn)
     end
+    # go into the database to find all this streams requests
     date_array_from_database  = self.delta_requests.collect { |dr| dr.request_time.to_s}
-    dates_to_get = date_array_from_filesystem - date_array_from_database
-    File.open(path, 'w') { |rf| rf.puts "Top DB for DS #{self.id} with #{dates_to_get.size} (#{date_array_from_filesystem.size}-#{date_array_from_database.size}) delta_requests"} 
+    dates_to_get_full = date_array_from_filesystem - date_array_from_database
+    puts "dates_to_get_full #{dates_to_get_full.size} = date_array_from_filesystem #{date_array_from_filesystem.size} - date_array_from_database = #{date_array_from_database.size}"
+    dates_to_get = dates_to_get_full
+    dates_to_get = dates_to_get_full[-6..-1] if dates_to_get_full.size > 55   # limit chunk to put in database to 55
+    puts "Number of dates to be put in the database: #{dates_to_get.size}"
     loop = 0
     dates_to_get.collect do |file_name|
-      File.open(path, 'a') { |rf| rf.puts "#{loop}: getting #{file_name}"} 
+      puts "#{loop}: getting #{file_name}"
       @delta_request = self.delta_requests.create()  # create new delta_request from this delta_stream
       begin
+        puts "filename = #{file_name} - success 1/2"
         @delta_request.create_pretty_response_file(file_name)
+        puts "filename = #{file_name} - success 2/2"
       rescue
-      File.open(path, 'a') { |rf| rf.puts "Failed to parse response"} 
+        puts "filename = #{file_name} - failure"
       end
       loop += 1
     end
