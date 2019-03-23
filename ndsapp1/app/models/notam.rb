@@ -24,9 +24,9 @@ class Notam < ApplicationRecord
     self.save
   end
 
-  def request_date
-    self.delta_request.request_time.to_s
-  end
+#  def request_date
+#    self.delta_request.request_time.to_s
+#  end
 
 end
   

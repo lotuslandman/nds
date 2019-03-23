@@ -36,3 +36,4 @@ This would be the same as a request that fails validation (of xml, of aixm FNS s
 ** March 2019 is hardcoded - handle months correctly
 ** Sort files_to_get so the latest are parsed first
    I don't think its sorted either way now.
+** BUG: filename of dates_array_from_filesystem is different from what is stored in database; should use delta_request.end_time for both

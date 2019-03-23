@@ -26,12 +26,13 @@ class DeltaStream < ApplicationRecord
       extract_date(fn)
     end
     # go into the database to find all this streams requests
-    date_array_from_database  = self.delta_requests.collect { |dr| dr.request_time.to_s}
+    date_array_from_database  = self.delta_requests.collect { |dr| dr.end_time.to_s}  # WARNING!!! why does dr.request_time still work????
     dates_to_get_full = date_array_from_filesystem - date_array_from_database
+    binding.pry
     dates_to_get_full_sort = dates_to_get_full.sort
     puts "dates_to_get_full_sort #{dates_to_get_full_sort.size} = date_array_from_filesystem #{date_array_from_filesystem.size} - date_array_from_database = #{date_array_from_database.size}"
     if dates_to_get_full_sort.size > 105   # limit chunk to put in database to 55
-      dates_to_get = dates_to_get_full_sort[-100..-1]
+      dates_to_get = dates_to_get_full_sort[-5..-1]
     else
       dates_to_get = dates_to_get_full_sort
     end
@@ -58,15 +59,14 @@ class DeltaStream < ApplicationRecord
     start_time = Time.parse(start_date_string)
     end_time = Time.parse(end_date_string)
     self.delta_requests.collect do |dr|
-      binding.pry
       if (dr.start_time < end_time) and (dr.start_time > start_time)
-        notams_all << {dr.request_time => dr.duration}
-#        notams_all << {dr.request_time => dr.notams.size}
+        notams_all << {dr.end_time => dr.duration}
+#        notams_all << {dr.end_time => dr.notams.size}
       end
     end
-#    self.delta_requests.collect { |dr| notams_flt << {dr.request_time => (dr.scenario_notams(scenario).size)}}
+#    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => (dr.scenario_notams(scenario).size)}}
     
-#    self.delta_requests.collect { |dr| notams_flt << {dr.request_time => dr.duration}}
+#    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => dr.duration}}
 #    if y_axis == "response_time"
 #    elsif y_axis == "number_of_notams"
     #    end
