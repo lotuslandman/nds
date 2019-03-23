@@ -86,10 +86,6 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     ''
   end
 
-  def create_dir(dir)
-    Dir.mkdir(dir) unless File.exists?(dir)
-  end
-
   def create_response_file(request_path, env, stream)
     t = Time.now;
 

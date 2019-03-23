@@ -34,3 +34,5 @@ rbenv global 2.5 - brings back to version of ruby used to develop application (t
 ** add ability to plot to see if fails to parse in delta_stream.rb
 This would be the same as a request that fails validation (of xml, of aixm FNS schema)
 ** March 2019 is hardcoded - handle months correctly
+** Sort files_to_get so the latest are parsed first
+   I don't think its sorted either way now.

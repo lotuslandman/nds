@@ -28,19 +28,23 @@ class DeltaStream < ApplicationRecord
     # go into the database to find all this streams requests
     date_array_from_database  = self.delta_requests.collect { |dr| dr.request_time.to_s}
     dates_to_get_full = date_array_from_filesystem - date_array_from_database
-    puts "dates_to_get_full #{dates_to_get_full.size} = date_array_from_filesystem #{date_array_from_filesystem.size} - date_array_from_database = #{date_array_from_database.size}"
-    dates_to_get = dates_to_get_full
-    dates_to_get = dates_to_get_full[-6..-1] if dates_to_get_full.size > 55   # limit chunk to put in database to 55
+    dates_to_get_full_sort = dates_to_get_full.sort
+    puts "dates_to_get_full_sort #{dates_to_get_full_sort.size} = date_array_from_filesystem #{date_array_from_filesystem.size} - date_array_from_database = #{date_array_from_database.size}"
+    if dates_to_get_full_sort.size > 105   # limit chunk to put in database to 55
+      dates_to_get = dates_to_get_full_sort[-100..-1]
+    else
+      dates_to_get = dates_to_get_full_sort
+    end
     puts "Number of dates to be put in the database: #{dates_to_get.size}"
     loop = 0
     dates_to_get.collect do |file_name|
-      puts "#{loop}: getting #{file_name}"
+#      puts "#{loop}: getting #{file_name}"
       @delta_request = self.delta_requests.create()  # create new delta_request from this delta_stream
       begin
-        puts "filename = #{file_name} - success 1/2"
-        @delta_request.create_pretty_response_file(file_name)
-        puts "filename = #{file_name} - success 2/2"
+        @delta_request.set_parseable_bool(true)
+        @delta_request.parse_response_time_save_pretty_store_in_db(file_name)
       rescue
+        @delta_request.set_parseable_bool(false)
         puts "filename = #{file_name} - failure"
       end
       loop += 1
@@ -54,6 +58,7 @@ class DeltaStream < ApplicationRecord
     start_time = Time.parse(start_date_string)
     end_time = Time.parse(end_date_string)
     self.delta_requests.collect do |dr|
+      binding.pry
       if (dr.start_time < end_time) and (dr.start_time > start_time)
         notams_all << {dr.request_time => dr.duration}
 #        notams_all << {dr.request_time => dr.notams.size}

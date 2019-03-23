@@ -20,6 +20,7 @@ ActiveRecord::Schema.define(version: 20190315012758) do
     t.float "duration", limit: 24
     t.datetime "start_time"
     t.datetime "end_time"
+    t.boolean "parseable"
     t.index ["delta_stream_id"], name: "index_delta_requests_on_delta_stream_id"
     t.index ["start_time"], name: "index_delta_requests_on_start_time"
   end

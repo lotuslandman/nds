@@ -5,7 +5,7 @@ class ApplicationController < ActionController::Base
 #  before_application :application_update_database
 
   def set_environment
-    session[:env]        ||= "prod"
+    session[:env]        ||= "fntb"
     session[:y_axis]     ||= "response_time"
     session[:start_date] ||= "1962-01-01 03:21:02"
     session[:end_date]   ||= "2062-03-14 03:39:02"

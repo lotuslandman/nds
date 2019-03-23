@@ -60,3 +60,4 @@ gem 'nokogiri'
 gem 'chartkick'
 gem 'groupdate'
 
+#gem 'pry-nav'

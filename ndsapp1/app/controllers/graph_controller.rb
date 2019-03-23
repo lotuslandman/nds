@@ -19,7 +19,6 @@ class GraphController < ApplicationController
   def graph
 #    update_database_for_all_streams
     @ds = DeltaStream.find_by_id(environment_to_stream_map)
-
     start_date_string = params[:start_graph] 
     start_date_string ||= session[:start_date]  # assumes session is string
     @start_date_string = start_date_string
