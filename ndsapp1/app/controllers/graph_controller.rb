@@ -17,22 +17,30 @@ class GraphController < ApplicationController
 
 
   def graph
-#    update_database_for_all_streams
+#   update_database_for_all_streams
     @ds = DeltaStream.find_by_id(environment_to_stream_map)
-    start_date_string = params[:start_graph] 
-    start_date_string ||= session[:start_date]  # assumes session is string
-    @start_date_string = start_date_string
 
-    end_date_string = params[:end_graph] 
-    end_date_string ||= session[:end_date]  # assumes session is string
-    @end_date_string = end_date_string
-    
+    if params[:start_graph] == "" or params[:start_graph].nil?
+      start_date_string = session[:start_date]  # assumes session is string
+    else
+      start_date_string = params[:start_graph]
+    end
+    @start_date = Time.parse(start_date_string)
+
+    if params[:end_graph] == "" or params[:end_graph].nil?
+      end_date_string = session[:end_date]  # assumes session is string
+    else
+      end_date_string = params[:end_graph]
+    end
+    @end_date = Time.parse(end_date_string)
+
     session[:start_date] = start_date_string
     session[:end_date] = end_date_string
     
     @scenario  = params[:scenario]  # if no scenario entered no need to store
     @y_axis = session[:y_axis]
-    @get_column_chart_data = @ds.column_chart_data(@start_date_string, @end_date_string, @scenario, @y_axis) 
+    @get_column_chart_data = @ds.column_chart_data(@start_date, @end_date, @scenario, @y_axis) if ((@start_date - @end_date) < 31.days)
+
   end
 
 #  def scenario

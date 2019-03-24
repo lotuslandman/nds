@@ -24,11 +24,15 @@ class DeltaStream < ApplicationRecord
     end
     date_array_from_filesystem = file_name_array.collect do |fn|
       extract_date(fn)
+#      file_date_string = extract_date(fn)  # extracted_date_string
+#      round_to_earlier_3_min_sync_date(Time.parse(file_date_string) + 10.seconds)
     end
     # go into the database to find all this streams requests
-    date_array_from_database  = self.delta_requests.collect { |dr| dr.end_time.to_s}  # WARNING!!! why does dr.request_time still work????
+    date_array_from_database  = self.delta_requests.collect {|dr| dr.start_time.to_s}  # or should it be start time?????????
+#      x = dr.start_time + 10.seconds    # adding a tad then rounding back to 3 min for matching only!!!!!
+#      round_to_earlier_3_min_sync_date(x)
+#    end
     dates_to_get_full = date_array_from_filesystem - date_array_from_database
-    binding.pry
     dates_to_get_full_sort = dates_to_get_full.sort
     puts "dates_to_get_full_sort #{dates_to_get_full_sort.size} = date_array_from_filesystem #{date_array_from_filesystem.size} - date_array_from_database = #{date_array_from_database.size}"
     if dates_to_get_full_sort.size > 105   # limit chunk to put in database to 55
@@ -38,8 +42,9 @@ class DeltaStream < ApplicationRecord
     end
     puts "Number of dates to be put in the database: #{dates_to_get.size}"
     loop = 0
-    dates_to_get.collect do |file_name|
-#      puts "#{loop}: getting #{file_name}"
+    dates_to_get.collect do |file_date|
+      #      puts "#{loop}: getting #{file_name}"
+      file_name = file_date.to_s   # Time to string
       @delta_request = self.delta_requests.create()  # create new delta_request from this delta_stream
       begin
         @delta_request.set_parseable_bool(true)
@@ -52,34 +57,70 @@ class DeltaStream < ApplicationRecord
     end
   end
 
-  def column_chart_data(start_date_string, end_date_string, scenario, y_axis)
+  def round_to_earlier_3_min_sync_date(date)
+    date_as_array = date.to_a
+    date_as_array[0] = 0
+    proposed_minute = date_as_array[1]
+    date_as_array[1] -= proposed_minute%3
+    Time.utc(*date_as_array)
+  end
+  
+  def create_array_uniform_dates(start_date, end_date)
+    synced_to_3_min_start_date = round_to_earlier_3_min_sync_date(start_date)
+    synced_to_3_min_end_date = round_to_earlier_3_min_sync_date(end_date)
+    synced_to_3_min_end_date += 3.minutes
+
+    synced_date_array = []
+    synced_date =       synced_to_3_min_start_date
+    while synced_date <= synced_to_3_min_end_date
+      synced_date_array.append(synced_date)
+      synced_date += 3.minutes
+    end
+    synced_date_array
+  end
+
+  def column_chart_data(start_date, end_date, scenario, y_axis)
+
+    # makes a hash of relevant delta_requests between start and end dates filling with start_time and duration
+    relevant_delta_requests = self.delta_requests.select {|dr| dr.start_time > start_date and dr.start_time < end_date}
+    relevant_dr_duration_hash = {}
+    relevant_delta_requests.collect do |dr|
+      ind = round_to_earlier_3_min_sync_date(dr.start_time)  # start time
+      relevant_dr_duration_hash[ind] = dr.duration           # duration
+    end
     notams_all = []
     notams_flt = []
-    # builds array of hashes where index is to be grouped
-    start_time = Time.parse(start_date_string)
-    end_time = Time.parse(end_date_string)
-    self.delta_requests.collect do |dr|
-      if (dr.start_time < end_time) and (dr.start_time > start_time)
-        notams_all << {dr.end_time => dr.duration}
-#        notams_all << {dr.end_time => dr.notams.size}
-      end
+
+    synced_date_array = create_array_uniform_dates(start_date, end_date)
+    synced_date_array.collect do |s_date|
+      x = relevant_dr_duration_hash[s_date]
+      x = 0.0 if x.nil?
+      notams_all << {s_date.to_s => x}
     end
+
+    notams_all_1 = notams_all
+    notams_all_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
+  end
+
+end
+    
+  # builds array of hashes where index is to be grouped
+#    self.delta_requests.collect do |dr|
+#      if (dr.start_time < end_time) and (dr.start_time > start_time)
+#        notams_all << {dr.end_time => dr.duration}
+##        notams_all << {dr.end_time => dr.notams.size}
+#      end
+#    end
 #    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => (dr.scenario_notams(scenario).size)}}
     
 #    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => dr.duration}}
 #    if y_axis == "response_time"
 #    elsif y_axis == "number_of_notams"
     #    end
-    notams_all_1 = notams_all
 #    notams_flt_1 = notams_flt[-7..-1]
     # takes array of hashes and makes hash, flattening allong hash keys
-    notams_all_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
 #    notams_flt_2 = notams_flt_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
 #    all_notams_w_filtered = [
 #      {name: "Blue Filtered Notams", data: notams_all_2},
 #      {name: "Red Filtered Notams", data: notams_flt_2}
 #    ]
-  end
-
-  
-end
