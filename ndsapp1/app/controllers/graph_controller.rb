@@ -15,7 +15,6 @@ class GraphController < ApplicationController
     end
   end
 
-
   def graph
 #   update_database_for_all_streams
     @ds = DeltaStream.find_by_id(environment_to_stream_map)
@@ -32,6 +31,7 @@ class GraphController < ApplicationController
     else
       end_date_string = params[:end_graph]
     end
+
     @end_date = Time.parse(end_date_string)
 
     session[:start_date] = start_date_string
@@ -49,6 +49,39 @@ class GraphController < ApplicationController
 #    st = params[:start_graph].to_i * -1
 #    en = params[:end_graph].to_i * -1
 #    scenario  = params[:scenario]
+#  end
+  def find_half_time
+    sd = Time.parse(session[:start_date])
+    ed = Time.parse(session[:end_date])
+    [sd, ed, (ed - sd) / 2]
+  end
+  
+  def left_half
+    sd, ed, half_time = find_half_time
+    ed = ed - half_time
+    session[:end_date] = ed.to_s
+    redirect_to :action => "graph"
+  end
+
+  def right_half
+    sd, ed, half_time = find_half_time
+    sd = sd + half_time
+    session[:start_date] = sd.to_s
+    redirect_to :action => "graph"
+  end
+
+#  def expand_left
+#    sd, ed, half_time = find_half_time
+#    sd = sd - half_time
+#    session[:start_date] = sd.to_s
+#    redirect_to :action => "graph"
+#  end
+#
+#  def expand_right
+#    sd, ed, half_time = find_half_time
+#    ed = ed + half_time
+#    session[:end_date] = ed.to_s
+#    redirect_to :action => "graph"
 #  end
 
   def response_time

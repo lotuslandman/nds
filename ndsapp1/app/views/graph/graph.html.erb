@@ -24,6 +24,8 @@ Change (<a href="response_time">response time</a> <a href="number_of_notams"># o
   <%= text_field_tag(:scenario) %>
   <%= submit_tag("Submit") %>
 <% end %>
+Half Range: <a href="left_half"><</a> <a href="right_half">></a><br>
+Expand Range: <a href="expand_left"><<</a> <a href="expand_right">>></a><br>
 
 start: <%= (Time.now - (60*10*1)).to_s  %> ---- end: <%= Time.now.to_s %> Example: 10 minutes back<br>
 start: <%= (Time.now - (60*60*1)).to_s  %> ---- end: <%= Time.now.to_s %> Example: 1 Hour back<br>
