@@ -7,8 +7,9 @@ class ApplicationController < ActionController::Base
   def set_environment
     session[:env]        ||= "fntb"
     session[:y_axis]     ||= "response_time"
-    session[:start_date] ||= "1962-01-01 03:21:02"
-    session[:end_date]   ||= "2062-03-14 03:39:02"
+    tn = Time.now
+    session[:start_date] ||= (tn - 6.hours).to_s
+    session[:end_date]   ||= tn.to_s
 #    session[:end_date] ||= Time.now #Time.parse(Time.now.to_s)
 #    session[:start_date] ||= session[:end_date]-(20*60) # 6*60*60  this will be 6 hours and will eventually want this here
   end

@@ -1,6 +1,6 @@
 class NotamsController < ApplicationController
   def index
-    @notams = Notam.all
+#    @notams = Notam.all
 
     respond_to do |format|
       format.html

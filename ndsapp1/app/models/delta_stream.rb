@@ -2,6 +2,9 @@ require 'time'
 class DeltaStream < ApplicationRecord
   has_many :delta_requests, dependent: :destroy
 
+  validates :frequency_minutes, presence: true
+  validates :delta_reachback, presence: true
+  
   def extract_date(fnp)
       File.basename(fnp).split('_')[1].split('.')[0].sub('T', ' ')+' UTC'
   end
@@ -35,7 +38,7 @@ class DeltaStream < ApplicationRecord
     dates_to_get_full = date_array_from_filesystem - date_array_from_database
     dates_to_get_full_sort = dates_to_get_full.sort
     puts "dates_to_get_full_sort #{dates_to_get_full_sort.size} = date_array_from_filesystem #{date_array_from_filesystem.size} - date_array_from_database = #{date_array_from_database.size}"
-    if dates_to_get_full_sort.size > 105   # limit chunk to put in database to 55
+    if dates_to_get_full_sort.size > 7   # limit chunk to put in database to 55
       dates_to_get = dates_to_get_full_sort[-5..-1]
     else
       dates_to_get = dates_to_get_full_sort
@@ -48,7 +51,7 @@ class DeltaStream < ApplicationRecord
       @delta_request = self.delta_requests.create()  # create new delta_request from this delta_stream
       begin
         @delta_request.set_parseable_bool(true)
-        @delta_request.parse_response_time_save_pretty_store_in_db(file_name)
+        @delta_request.handle_full_delta_request(file_name)
       rescue
         @delta_request.set_parseable_bool(false)
         puts "filename = #{file_name} - failure"
@@ -82,7 +85,13 @@ class DeltaStream < ApplicationRecord
   def column_chart_data(start_date, end_date, scenario, y_axis)
 
     # makes a hash of relevant delta_requests between start and end dates filling with start_time and duration
-    relevant_delta_requests = self.delta_requests.select {|dr| dr.start_time > start_date and dr.start_time < end_date}
+    relevant_delta_requests = self.delta_requests.select do |dr|
+      begin
+        dr.start_time > start_date and dr.start_time < end_date
+      rescue
+        false
+      end
+    end
     relevant_dr_duration_hash = {}
     relevant_delta_requests.collect do |dr|
       ind = round_to_earlier_3_min_sync_date(dr.start_time)  # start time

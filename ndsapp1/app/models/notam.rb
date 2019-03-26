@@ -1,6 +1,10 @@
 class Notam < ApplicationRecord
   belongs_to :delta_request
 
+  validates :scenario, presence: true
+  validates :xsi_nil_error, presence: true
+  validates :end_position, presence: true
+  
 #  attr_reader :notam_doc, :trans_id, :scenario, :xsi_nil_present, :begin_position, :end_position, :time_position
 
 #  def initialize(notam_doc)
@@ -21,12 +25,14 @@ class Notam < ApplicationRecord
     self.end_position = notam_doc.xpath(".//endPosition/text()")
     xsi_nil_list = notam_doc.xpath(".//*[@nil='true'][text()]")
     self.xsi_nil_error = xsi_nil_list.size > 0
-    self.save
+    begin
+      self.save
+    rescue
+      puts "could not save notam #{notam.id} from delta_request #{self.delta_request}"
+      binding.pry
+      ''
+    end
   end
-
-#  def request_date
-#    self.delta_request.request_time.to_s
-#  end
 
 end
   

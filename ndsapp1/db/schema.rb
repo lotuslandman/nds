@@ -13,7 +13,6 @@
 ActiveRecord::Schema.define(version: 20190315012758) do
 
   create_table "delta_requests", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8" do |t|
-    t.datetime "request_time"
     t.bigint "delta_stream_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

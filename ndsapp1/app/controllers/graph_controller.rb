@@ -50,39 +50,55 @@ class GraphController < ApplicationController
 #    en = params[:end_graph].to_i * -1
 #    scenario  = params[:scenario]
 #  end
-  def find_half_time
+  def find_full_time
     sd = Time.parse(session[:start_date])
     ed = Time.parse(session[:end_date])
-    [sd, ed, (ed - sd) / 2]
+    [sd, ed, (ed - sd) ]
   end
   
-  def left_half
-    sd, ed, half_time = find_half_time
-    ed = ed - half_time
+  def shift_left
+    sd, ed, full_time = find_full_time
+    sd = sd - full_time
+    ed = ed - full_time
+    session[:start_date] = sd.to_s
     session[:end_date] = ed.to_s
     redirect_to :action => "graph"
   end
 
-  def right_half
-    sd, ed, half_time = find_half_time
-    sd = sd + half_time
+  def shift_right
+    sd, ed, full_time = find_full_time
+    sd = sd + full_time
+    ed = ed + full_time
+    session[:start_date] = sd.to_s
+    session[:end_date] = ed.to_s
+    redirect_to :action => "graph"
+  end
+
+  def expand_left
+    sd, ed, full_time = find_full_time
+    sd = sd - full_time
     session[:start_date] = sd.to_s
     redirect_to :action => "graph"
   end
 
-#  def expand_left
-#    sd, ed, half_time = find_half_time
-#    sd = sd - half_time
-#    session[:start_date] = sd.to_s
-#    redirect_to :action => "graph"
-#  end
-#
-#  def expand_right
-#    sd, ed, half_time = find_half_time
-#    ed = ed + half_time
-#    session[:end_date] = ed.to_s
-#    redirect_to :action => "graph"
-#  end
+  def expand_right
+    sd, ed, full_time = find_full_time
+    ed = ed + full_time
+    session[:end_date] = ed.to_s
+    redirect_to :action => "graph"
+  end
+
+  def last_hour
+    session[:start_date] = (Time.now - 60.minutes).to_s
+    session[:end_date] = Time.now.to_s
+    redirect_to :action => "graph"
+  end
+
+  def last_day
+    session[:start_date] = (Time.now - 24.hours).to_s
+    session[:end_date] = Time.now.to_s
+    redirect_to :action => "graph"
+  end
 
   def response_time
     session[:y_axis] = "response_time"

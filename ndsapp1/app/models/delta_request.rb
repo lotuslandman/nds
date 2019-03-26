@@ -1,13 +1,17 @@
 class DeltaRequest < ApplicationRecord
   belongs_to :delta_stream
   has_many :notams, dependent: :destroy
-  
+
+  validates :duration, presence: true
+  validates :start_time, presence: true
+  validates :end_time, presence: true
+#  validates :parseable, presence: true # apparently setting to false fails validation
+
   def set_parseable_bool(status)
     self.parseable = status
-    self.save
   end
 
-  def parse_and_store_time_info(response_time_info_line)
+  def parse_and_store_time_info_to_delta_request(response_time_info_line)
     rts = response_time_info_line.split(',')
     start_time = rts[0].strip
     end_time = rts[1].strip
@@ -15,27 +19,42 @@ class DeltaRequest < ApplicationRecord
     self.start_time = start_time
     self.end_time = end_time
     self.duration = duration
-    self.save
   end
 
-  def parse_response_and_store_pretty(response, file_path_pretty)
+  def parse_response_and_save_dr(response, file_path_pretty)
+    self.set_parseable_bool(true)
+
     begin
       pretty_response = Nokogiri::XML(response) { |config| config.strict }
     rescue
-      puts "Nokogiri couldn't parse"
+      self.set_parseable_bool(false)
+      puts "Nokogiri couldn't parse: #{file_path_pretty}"
     end
-    
+
+    begin
+      self.save!
+    rescue
+      puts "Couldn't save delta_request - file_path_pretty: #{file_path_pretty} "
+    end
+    return pretty_response
+  end
+  
+  def save_pretty_notams_to_database(pretty_response, file_path_pretty)
     begin
       File.open(file_path_pretty, 'w') { |rf| rf.puts pretty_response}
     rescue
-      puts "Couldn't write pretty"
-      puts "file_path_pretty #{file_path_pretty}"
+      puts "Couldn't write pretty - file_path_pretty: #{file_path_pretty}"
     end
+
     doc = pretty_response.remove_namespaces!       # seems to be necessary for Nokogiri - simplifies XPATH statements too
     notam_docs = doc.xpath("//AIXMBasicMessage")   # prepare to store to Notam object
-    @notam_array = notam_docs.collect do |notam_doc|
-      @notam = self.notams.create()                # notams are created even if they are a repeat from the prior delta request.
-      @notam.fill(notam_doc)                       # fills the database fields with things extracted from the Nokogiri document
+    notam_docs.collect do |notam_doc|
+      begin
+        notam = self.notams.create()                # notams are created even if they are a repeat from the prior delta request.
+        notam.fill(notam_doc)                       # fills the database fields with things extracted from the Nokogiri document
+      rescue
+        puts "couldn't create or fill notam"
+      end
     end
   end
 
@@ -43,7 +62,7 @@ class DeltaRequest < ApplicationRecord
     Dir.mkdir(dir) unless File.exists?(dir)
   end
 
-  def parse_response_time_save_pretty_store_in_db(file_name) # parse_response_time_save_pretty_store_in_db
+  def handle_full_delta_request(file_name) # parse_response_time_save_pretty_store_in_db
     path = "/home/scott/dev/nds/ndsapp1/llog.txt"
     fn_frag = file_name.sub(" UTC","").split(' ').join('T')
 
@@ -51,17 +70,18 @@ class DeltaRequest < ApplicationRecord
     file_path_response = path_to_delta_files + "/"        + 'delta_'+fn_frag+'.xml'
     file_path_time     = path_to_delta_files + "_time/"   + 'delta_'+fn_frag+'_time.xml'
     file_path_pretty   = path_to_delta_files + "_pretty/" + 'delta_'+fn_frag+'_pretty.xml'
-    response                = File.read(file_path_response)
-    response_time_info_line = File.read(file_path_time)
     begin
-      self.set_parseable_bool(true)
+      response                = File.read(file_path_response)
+      response_time_info_line = File.read(file_path_time)
       create_dir(path_to_delta_files + "_pretty/")
-      parse_response_and_store_pretty(response, file_path_pretty)
+      parse_and_store_time_info_to_delta_request(response_time_info_line)
     rescue
-      @delta_request.set_parseable_bool(false)
-      puts "filename = #{file_name} - failure"
+      puts "couldn't read response or time files or parse them"
     end
-    parse_and_store_time_info(response_time_info_line)
+    pretty_response = parse_response_and_save_dr(response, file_path_pretty)
+    
+    save_pretty_notams_to_database(pretty_response, file_path_pretty) if self.parseable
+    
   end
 
   def scenario_notams(scenario)
