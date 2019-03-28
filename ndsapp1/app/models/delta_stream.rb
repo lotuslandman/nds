@@ -96,7 +96,6 @@ class DeltaStream < ApplicationRecord
     relevant_delta_requests.collect do |dr|
       ind = round_to_earlier_3_min_sync_date(dr.start_time)  # start time
 
-
       case session[:y_axis]
       when "scenario"
         relevant_dr_duration_hash[ind] = dr.duration           # duration
