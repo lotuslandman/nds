@@ -95,7 +95,16 @@ class DeltaStream < ApplicationRecord
     relevant_dr_duration_hash = {}
     relevant_delta_requests.collect do |dr|
       ind = round_to_earlier_3_min_sync_date(dr.start_time)  # start time
-      relevant_dr_duration_hash[ind] = dr.duration           # duration
+
+
+      case session[:y_axis]
+      when "scenario"
+        relevant_dr_duration_hash[ind] = dr.duration           # duration
+      when "response_time"
+        relevant_dr_duration_hash[ind] = dr.scenario_notams(scenario).size           # duration
+      end
+#    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => (dr
+#    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => dr.duration}}
     end
     notams_all = []
     notams_flt = []
@@ -120,8 +129,8 @@ end
 ##        notams_all << {dr.end_time => dr.notams.size}
 #      end
 #    end
-#    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => (dr.scenario_notams(scenario).size)}}
     
+#    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => (dr.scenario_notams(scenario).size)}}
 #    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => dr.duration}}
 #    if y_axis == "response_time"
 #    elsif y_axis == "number_of_notams"
