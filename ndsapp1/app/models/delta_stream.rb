@@ -82,45 +82,101 @@ class DeltaStream < ApplicationRecord
     synced_date_array
   end
 
-  def column_chart_data(start_date, end_date, scenario, y_axis)
-
-    # makes a hash of relevant delta_requests between start and end dates filling with start_time and duration
-    relevant_delta_requests = self.delta_requests.select do |dr|
+  def get_drs_from_range(start_date, end_date)
+    self.delta_requests.select do |dr|
       begin
         dr.start_time > start_date and dr.start_time < end_date
       rescue
         false
       end
     end
+  end
+
+
+#  def self.delta_request_chart(st, en, scenario)
+#    notams_all = []
+#    notams_flt = []
+#    # builds array of hashes where index is to be grouped
+#    DeltaRequest.all.collect { |dr| notams_all << {dr.request_time => dr.notams.size}}
+#    DeltaRequest.all.collect { |dr| notams_flt << {dr.request_time => (dr.scenario_notams(scenario).size)}}
+#    #    notams_all_1 = notams_all[50..60]
+#    #    notams_flt_1 = notams_flt[50..60]
+#    notams_all_1 = notams_all[st..en]
+#    notams_flt_1 = notams_flt[st..en]
+#    # takes array of hashes and makes hash, flattening allong hash keys
+#    notams_all_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
+#    notams_flt_2 = notams_flt_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
+#    all_notams_w_filtered = [
+#      {name: "Blue Filtered Notams", data: notams_all_2},
+#      {name: "Red Filtered Notams", data: notams_flt_2}
+#    ]
+#  end
+  def column_chart_data(start_date, end_date, scenario, y_axis)
+    relevant_delta_requests = get_drs_from_range(start_date, end_date)
+    # makes a hash of relevant delta_requests between start and end dates filling with start_time and duration
     relevant_dr_duration_hash = {}
     relevant_delta_requests.collect do |dr|
       ind = round_to_earlier_3_min_sync_date(dr.start_time)  # start time
-
       case session[:y_axis]
-      when "scenario"
-        relevant_dr_duration_hash[ind] = dr.duration           # duration
       when "response_time"
-        relevant_dr_duration_hash[ind] = dr.scenario_notams(scenario).size           # duration
+        relevant_dr_duration_hash[ind] = dr.duration           # duration
+      when "number_of_notams"
+        relevant_dr_duration_hash[ind] = dr.notams.size        # number of notams
+      when "scenario"
+        relevant_dr_duration_hash[ind] = dr.scenario_notams(scenario).size
       end
 #    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => (dr
 #    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => dr.duration}}
     end
+    binding.pry
     notams_all = []
     notams_flt = []
-
     synced_date_array = create_array_uniform_dates(start_date, end_date)
+#    DeltaRequest.all.collect { |dr| notams_all << {dr.request_time => dr.notams.size}}
+#    DeltaRequest.all.collect { |dr| notams_flt << {dr.request_time => (dr.scenario_notams(scenario).size)}}
     synced_date_array.collect do |s_date|
       x = relevant_dr_duration_hash[s_date]
       x = 0.0 if x.nil?
       notams_all << {s_date.to_s => x}
     end
-
     notams_all_1 = notams_all
     notams_all_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
   end
-
 end
-    
+
+###### Hoon demo #########
+#  def column_chart_data(start_date, end_date, scenario, y_axis)
+#
+#    # makes a hash of relevant delta_requests between start and end dates filling with start_time and duration
+#    relevant_delta_requests = self.delta_requests.select do |dr|
+#      begin
+#        dr.start_time > start_date and dr.start_time < end_date
+#      rescue
+#        false
+#      end
+#    end
+#    relevant_dr_duration_hash = {}
+#    relevant_delta_requests.collect do |dr|
+#      ind = round_to_earlier_3_min_sync_date(dr.start_time)  # start time
+#      relevant_dr_duration_hash[ind] = dr.duration           # duration
+#    end
+#    notams_all = []
+#    notams_flt = []
+#
+#    synced_date_array = create_array_uniform_dates(start_date, end_date)
+#    synced_date_array.collect do |s_date|
+#      x = relevant_dr_duration_hash[s_date]
+#      x = 0.0 if x.nil?
+#      notams_all << {s_date.to_s => x}
+#    end
+#
+#    notams_all_1 = notams_all
+#    notams_all_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
+#  end
+#
+#end
+
+#### below works now on production !!! ####
   # builds array of hashes where index is to be grouped
 #    self.delta_requests.collect do |dr|
 #      if (dr.start_time < end_time) and (dr.start_time > start_time)
