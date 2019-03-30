@@ -5,15 +5,22 @@ class DeltaStream < ApplicationRecord
   validates :frequency_minutes, presence: true
   validates :delta_reachback, presence: true
   
-  def extract_date(fnp)
-      File.basename(fnp).split('_')[1].split('.')[0].sub('T', ' ')+' UTC'
-  end
-  
-  def get_filenames
+  def mar2019_file_name_array  # go into the filesystem ".../.../files_delta/" and find all delta responses
     stream_number = self.id.to_s
-    out = Dir.glob("/home/scott/dev/nds/stream_files/stream_#{stream_number.to_s}_files/2019-3/files_delta/*").sort.collect do |fnp|
+    dir_result = Dir.glob("/home/scott/dev/nds/stream_files/stream_#{stream_number.to_s}_files/2019-3/files_delta/*").sort.collect do |fnp|
       '../files_delta/'+File.basename(fnp)  # have to back out of rails directory with ../
     end
+    file_name_array =[]
+    dir_result.sort.collect do |file_name_raw|
+      begin
+        x = file_name_raw.split("delta")[2].split('.')[0][1..-1]
+        y = x.sub('T', ' ')+' UTC'
+        file_name_array.append(y)
+      rescue
+        puts "file in delta_files/ not named correctly: #{file_name_raw}"
+      end
+    end
+    file_name_array
   end
   
 #    File.open(path, 'w') { |rf| rf.puts "Top DB for DS #{self.id} with #{dates_to_get.size} (#{date_array_from_filesystem.size}-#{date_array_from_database.size}) delta_requests"}
@@ -21,29 +28,24 @@ class DeltaStream < ApplicationRecord
   def create_pretty_response_file_and_fill_database
     path = "/home/scott/dev/nds/ndsapp1/llog.txt"
     request_type  = :delta
-    # go into the filesystem ".../.../files_delta/" and find all responses  WARNING: get_filenames hardcoded to March 2019
-    file_name_array = get_filenames.sort.each do |file_name|
-      file_name.split("delta")[2].split('.')[0][1..-1]
-    end
-    date_array_from_filesystem = file_name_array.collect do |fn|
-      extract_date(fn)
+    date_array_from_filesystem = mar2019_file_name_array
 #      file_date_string = extract_date(fn)  # extracted_date_string
 #      round_to_earlier_3_min_sync_date(Time.parse(file_date_string) + 10.seconds)
-    end
     # go into the database to find all this streams requests
-    date_array_from_database  = self.delta_requests.collect {|dr| dr.start_time.to_s}  # or should it be start time?????????
+    date_array_from_database  = self.delta_requests.collect {|dr| dr.start_time.to_s}  
 #      x = dr.start_time + 10.seconds    # adding a tad then rounding back to 3 min for matching only!!!!!
 #      round_to_earlier_3_min_sync_date(x)
 #    end
     dates_to_get_full = date_array_from_filesystem - date_array_from_database
+    should_be_empty = date_array_from_database - date_array_from_filesystem    # should be no items in DB that are not in the filesystem
+    puts "entry in database that is not in the filesystem" if not should_be_empty.empty?
     dates_to_get_full_sort = dates_to_get_full.sort
     puts "dates_to_get_full_sort #{dates_to_get_full_sort.size} = date_array_from_filesystem #{date_array_from_filesystem.size} - date_array_from_database = #{date_array_from_database.size}"
     if dates_to_get_full_sort.size > 7   # limit chunk to put in database to 55
-      dates_to_get = dates_to_get_full_sort[-5..-1]
+      dates_to_get = dates_to_get_full_sort[-10..-1]  # [-1..-1] gets one from troubleshooting
     else
       dates_to_get = dates_to_get_full_sort
     end
-    puts "Number of dates to be put in the database: #{dates_to_get.size}"
     loop = 0
     dates_to_get.collect do |file_date|
       #      puts "#{loop}: getting #{file_name}"
@@ -70,9 +72,8 @@ class DeltaStream < ApplicationRecord
   
   def create_array_uniform_dates(start_date, end_date)
     synced_to_3_min_start_date = round_to_earlier_3_min_sync_date(start_date)
-    synced_to_3_min_end_date = round_to_earlier_3_min_sync_date(end_date)
-    synced_to_3_min_end_date += 3.minutes
-
+    synced_to_3_min_end_date   = round_to_earlier_3_min_sync_date(end_date)
+    synced_to_3_min_start_date += 3.minutes
     synced_date_array = []
     synced_date =       synced_to_3_min_start_date
     while synced_date <= synced_to_3_min_end_date
@@ -117,18 +118,18 @@ class DeltaStream < ApplicationRecord
     relevant_dr_duration_hash = {}
     relevant_delta_requests.collect do |dr|
       ind = round_to_earlier_3_min_sync_date(dr.start_time)  # start time
-      case session[:y_axis]
-      when "response_time"
+#      case session[:y_axis]
+#      when "response_time"
         relevant_dr_duration_hash[ind] = dr.duration           # duration
-      when "number_of_notams"
-        relevant_dr_duration_hash[ind] = dr.notams.size        # number of notams
-      when "scenario"
-        relevant_dr_duration_hash[ind] = dr.scenario_notams(scenario).size
-      end
+#      when "number_of_notams"
+#      relevant_dr_duration_hash[ind] = dr.notams.size        # number of notams
+#      when "scenario"
+#        relevant_dr_duration_hash[ind] = dr.scenario_notams(scenario).size
+#      end
+
 #    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => (dr
 #    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => dr.duration}}
     end
-    binding.pry
     notams_all = []
     notams_flt = []
     synced_date_array = create_array_uniform_dates(start_date, end_date)
@@ -136,7 +137,10 @@ class DeltaStream < ApplicationRecord
 #    DeltaRequest.all.collect { |dr| notams_flt << {dr.request_time => (dr.scenario_notams(scenario).size)}}
     synced_date_array.collect do |s_date|
       x = relevant_dr_duration_hash[s_date]
-      x = 0.0 if x.nil?
+      if x.nil?
+        x = 0.0
+        puts "date does not have a valid duration: #{s_date.to_s}"
+      end
       notams_all << {s_date.to_s => x}
     end
     notams_all_1 = notams_all

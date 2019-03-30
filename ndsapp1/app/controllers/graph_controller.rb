@@ -41,7 +41,7 @@ class GraphController < ApplicationController
     @start_date = find_start_of_range
     @end_date = find_end_of_range
     @scenario  = params[:scenario]  # if no scenario entered no need to store
-    @y_axis = session[:y_axis]
+#    @y_axis = session[:y_axis]
     @get_column_chart_data = @ds.column_chart_data(@start_date, @end_date, @scenario, @y_axis) if ((@start_date - @end_date) < 31.days)
 
   end
