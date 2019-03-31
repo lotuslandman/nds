@@ -112,8 +112,8 @@ class GraphController < ApplicationController
     redirect_to :action => "graph"
   end
   
-  def parseable
-    session[:y_axis] = "parseable"
+  def not_parseable
+    session[:y_axis] = "not_parseable"
     redirect_to :action => "graph"
   end
   

@@ -42,7 +42,7 @@ class DeltaStream < ApplicationRecord
     dates_to_get_full_sort = dates_to_get_full.sort
     puts "dates_to_get_full_sort #{dates_to_get_full_sort.size} = date_array_from_filesystem #{date_array_from_filesystem.size} - date_array_from_database = #{date_array_from_database.size}"
     if dates_to_get_full_sort.size > 7   # limit chunk to put in database to 55
-      dates_to_get = dates_to_get_full_sort[-10..-1]  # [-1..-1] gets one from troubleshooting
+      dates_to_get = dates_to_get_full_sort[-25..-1]  # [-1..-1] gets one from troubleshooting
     else
       dates_to_get = dates_to_get_full_sort
     end
@@ -52,10 +52,10 @@ class DeltaStream < ApplicationRecord
       file_name = file_date.to_s   # Time to string
       @delta_request = self.delta_requests.create()  # create new delta_request from this delta_stream
       begin
-        @delta_request.set_parseable_bool(true)
+        @delta_request.not_parseable = false
         @delta_request.handle_full_delta_request(file_name)
       rescue
-        @delta_request.set_parseable_bool(false)
+        @delta_request.not_parseable = true
         puts "filename = #{file_name} - failure"
       end
       loop += 1
@@ -123,8 +123,8 @@ class DeltaStream < ApplicationRecord
         relevant_dr_duration_hash[ind] = dr.duration           # duration could try dr.notams.size
       when "number_of_notams"
         relevant_dr_duration_hash[ind] = dr.notams.size        # number of notams
-      when "parseable"
-        relevant_dr_duration_hash[ind] = dr.parseable          # dr.scenario_notams(scenario).size
+      when "not_parseable"
+        relevant_dr_duration_hash[ind] = (dr.not_parseable ? 1 : 0)  # dr.scenario_notams(scenario).size
       end
     end
     notams_all_1 = []

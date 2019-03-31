@@ -1,15 +1,14 @@
-
-  
 <h1>Plotting:
 <%= "Response Time" if session[:y_axis] == "response_time" %>
 <%= "Number of NOTAMs" if session[:y_axis] == "number_of_notams" %>
+<%= "Not Parseable" if session[:y_axis] == "not_parseable" %>
  in 
 <%= "FNTB (.75)" if session[:env] == "fntb" %>
 <%= "Production (OEX)" if session[:env] == "prod" %>
 <%= "FNTB (testset)" if session[:env] == "fntb_test" %>
 </h1>
 Change (<a href="fntb">FNTB</a> <a href="prod">Production</a>)<br>
-Change (<a href="response_time">Response Time</a> <a href="number_of_notams">Number of Notams</a> <a href="parseable">Response Parseable</a>)
+Change (<a href="response_time">Response Time</a> <a href="number_of_notams">Number of Notams</a> <a href="not_parseable">Response Not Parseable</a>)
 
 <%= javascript_include_tag "https://www.gstatic.com/charts/loader.js" %>
 

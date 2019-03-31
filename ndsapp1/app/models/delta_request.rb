@@ -7,10 +7,6 @@ class DeltaRequest < ApplicationRecord
   validates :end_time, presence: true
 #  validates :parseable, presence: true # apparently setting to false fails validation
 
-  def set_parseable_bool(status)
-    self.parseable = status
-  end
-
   def parse_and_store_time_info_to_delta_request(response_time_info_line)
     rts = response_time_info_line.split(',')
     start_time = rts[0].strip
@@ -22,12 +18,15 @@ class DeltaRequest < ApplicationRecord
   end
 
   def parse_response_and_save_dr(response, file_path_pretty)
-    self.set_parseable_bool(true)
+    self.not_parseable = false
 
     begin
       pretty_response = Nokogiri::XML(response) { |config| config.strict }
+      dr_doc = pretty_response.remove_namespaces!       # seems to be necessary for Nokogiri - simplifies XPATH statements too
+      feature_collection_doc = dr_doc.xpath("//FeatureCollection")
+      self.number_returned = feature_collection_doc.attr('numberReturned').value
     rescue
-      self.set_parseable_bool(false)
+      self.not_parseable = true
       puts "Nokogiri couldn't parse: #{file_path_pretty}"
     end
 
@@ -48,6 +47,8 @@ class DeltaRequest < ApplicationRecord
 
     doc = pretty_response.remove_namespaces!       # seems to be necessary for Nokogiri - simplifies XPATH statements too
     notam_docs = doc.xpath("//AIXMBasicMessage")   # prepare to store to Notam object
+    puts "Number of NOTAMs in message #{self.number_returned} not equal to what was extracted #{notam_docs.size}" if notam_docs.size != self.number_returned.to_i
+
     notam_docs.collect do |notam_doc|
       begin
         notam = self.notams.create()                # notams are created even if they are a repeat from the prior delta request.
@@ -79,9 +80,11 @@ class DeltaRequest < ApplicationRecord
       puts "couldn't read response or time files or parse them"
     end
     pretty_response = parse_response_and_save_dr(response, file_path_pretty)
-    
-    save_pretty_notams_to_database(pretty_response, file_path_pretty) if self.parseable
-    
+    if self.not_parseable
+      puts "not parseable so not trying to save to database #{file_path_pretty}"
+    else
+      save_pretty_notams_to_database(pretty_response, file_path_pretty)
+    end
   end
 
   def scenario_notams(scenario)
