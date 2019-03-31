@@ -118,33 +118,34 @@ class DeltaStream < ApplicationRecord
     relevant_dr_duration_hash = {}
     relevant_delta_requests.collect do |dr|
       ind = round_to_earlier_3_min_sync_date(dr.start_time)  # start time
-#      case session[:y_axis]
-#      when "response_time"
-        relevant_dr_duration_hash[ind] = dr.duration           # duration
-#      when "number_of_notams"
-#      relevant_dr_duration_hash[ind] = dr.notams.size        # number of notams
-#      when "scenario"
-#        relevant_dr_duration_hash[ind] = dr.scenario_notams(scenario).size
-#      end
-
-#    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => (dr
-#    self.delta_requests.collect { |dr| notams_flt << {dr.end_time => dr.duration}}
+      case y_axis
+      when "response_time"
+        relevant_dr_duration_hash[ind] = dr.duration           # duration could try dr.notams.size
+      when "number_of_notams"
+        relevant_dr_duration_hash[ind] = dr.notams.size        # number of notams
+      when "parseable"
+        relevant_dr_duration_hash[ind] = dr.parseable          # dr.scenario_notams(scenario).size
+      end
     end
-    notams_all = []
+    notams_all_1 = []
     notams_flt = []
     synced_date_array = create_array_uniform_dates(start_date, end_date)
-#    DeltaRequest.all.collect { |dr| notams_all << {dr.request_time => dr.notams.size}}
-#    DeltaRequest.all.collect { |dr| notams_flt << {dr.request_time => (dr.scenario_notams(scenario).size)}}
+
     synced_date_array.collect do |s_date|
       x = relevant_dr_duration_hash[s_date]
       if x.nil?
         x = 0.0
-        puts "date does not have a valid duration: #{s_date.to_s}"
+        puts "Missing: Could not find a delta response in DB for this date: #{s_date.to_s}"  # should write to log file
       end
-      notams_all << {s_date.to_s => x}
+      notams_all_1 << {s_date.to_s => x}
     end
-    notams_all_1 = notams_all
+
     notams_all_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
+    notams_flt_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
+    all_notams_w_filtered = [
+      {name: "Blue Filtered Notams", data: notams_all_2}
+#      {name: "Red Filtered Notams", data: notams_flt_2}
+    ]
   end
 end
 

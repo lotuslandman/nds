@@ -33,6 +33,8 @@ Rails.application.routes.draw do
   post 'graph/response_time'
   get 'graph/number_of_notams'
   post 'graph/number_of_notams'
+  get 'graph/parseable'
+  post 'graph/parseable'
 
   get 'graph/scenario'
   post 'graph/scenario'

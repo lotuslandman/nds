@@ -25,11 +25,11 @@ class Notam < ApplicationRecord
     self.end_position = notam_doc.xpath(".//endPosition/text()")
     xsi_nil_list = notam_doc.xpath(".//*[@nil='true'][text()]")
     self.xsi_nil_error = xsi_nil_list.size > 0
+    binding.pry
     begin
       self.save!
     rescue
       puts "could not save notam #{notam.id} from delta_request #{self.delta_request}"
-      ''
     end
   end
 
