@@ -5,9 +5,9 @@ class DeltaStream < ApplicationRecord
   validates :frequency_minutes, presence: true
   validates :delta_reachback, presence: true
   
-  def mar2019_file_name_array  # go into the filesystem ".../.../files_delta/" and find all delta responses
+  def apr2019_file_name_array  # go into the filesystem ".../.../files_delta/" and find all delta responses
     stream_number = self.id.to_s
-    dir_result = Dir.glob("/home/scott/dev/nds/stream_files/stream_#{stream_number.to_s}_files/2019-3/files_delta/*").sort.collect do |fnp|
+    dir_result = Dir.glob("/home/scott/dev/nds/stream_files/stream_#{stream_number.to_s}_files/2019-4/files_delta/*").sort.collect do |fnp|
       '../files_delta/'+File.basename(fnp)  # have to back out of rails directory with ../
     end
     file_name_array =[]
@@ -28,17 +28,11 @@ class DeltaStream < ApplicationRecord
   def create_pretty_response_file_and_fill_database
     path = "/home/scott/dev/nds/ndsapp1/llog.txt"
     request_type  = :delta
-    date_array_from_filesystem = mar2019_file_name_array
-#      file_date_string = extract_date(fn)  # extracted_date_string
-#      round_to_earlier_3_min_sync_date(Time.parse(file_date_string) + 10.seconds)
-    # go into the database to find all this streams requests
+    date_array_from_filesystem = apr2019_file_name_array
     date_array_from_database  = self.delta_requests.collect {|dr| dr.start_time.to_s}  
-#      x = dr.start_time + 10.seconds    # adding a tad then rounding back to 3 min for matching only!!!!!
-#      round_to_earlier_3_min_sync_date(x)
-#    end
     dates_to_get_full = date_array_from_filesystem - date_array_from_database
     should_be_empty = date_array_from_database - date_array_from_filesystem    # should be no items in DB that are not in the filesystem
-    puts "entry in database that is not in the filesystem" if not should_be_empty.empty?
+    puts "entry in database that is not in the filesystem #{should_be_empty.size} #{should_be_empty[0].to_s}" if not should_be_empty.empty?
     dates_to_get_full_sort = dates_to_get_full.sort
     puts "dates_to_get_full_sort #{dates_to_get_full_sort.size} = date_array_from_filesystem #{date_array_from_filesystem.size} - date_array_from_database = #{date_array_from_database.size}"
     if dates_to_get_full_sort.size > 7   # limit chunk to put in database to 55
@@ -48,15 +42,16 @@ class DeltaStream < ApplicationRecord
     end
     loop = 0
     dates_to_get.collect do |file_date|
-      #      puts "#{loop}: getting #{file_name}"
       file_name = file_date.to_s   # Time to string
       @delta_request = self.delta_requests.create()  # create new delta_request from this delta_stream
       begin
         @delta_request.not_parseable = false
         @delta_request.handle_full_delta_request(file_name)
+        puts "YES Date #{file_date}"
       rescue
         @delta_request.not_parseable = true
-        puts "filename = #{file_name} - failure"
+#        puts "filename = #{file_name} - failure"
+        puts "NO  Date #{file_date}"
       end
       loop += 1
     end
@@ -116,6 +111,7 @@ class DeltaStream < ApplicationRecord
     relevant_delta_requests = get_drs_from_range(start_date, end_date)
     # makes a hash of relevant delta_requests between start and end dates filling with start_time and duration
     relevant_dr_duration_hash = {}
+    relevant_dr_duration_hash_1 = {}
     relevant_delta_requests.collect do |dr|
       ind = round_to_earlier_3_min_sync_date(dr.start_time)  # start time
       case y_axis
@@ -123,12 +119,14 @@ class DeltaStream < ApplicationRecord
         relevant_dr_duration_hash[ind] = dr.duration           # duration could try dr.notams.size
       when "number_of_notams"
         relevant_dr_duration_hash[ind] = dr.notams.size        # number of notams
+#        binding.pry if not scenario.nil?
+        relevant_dr_duration_hash_1[ind] = dr.scenario_notams(scenario).size
       when "not_parseable"
-        relevant_dr_duration_hash[ind] = (dr.not_parseable ? 1 : 0)  # dr.scenario_notams(scenario).size
+        relevant_dr_duration_hash[ind] = (dr.not_parseable ? 1 : 0)  # 
       end
     end
     notams_all_1 = []
-    notams_flt = []
+    notams_flt_1 = []
     synced_date_array = create_array_uniform_dates(start_date, end_date)
 
     synced_date_array.collect do |s_date|
@@ -138,13 +136,19 @@ class DeltaStream < ApplicationRecord
         puts "Missing: Could not find a delta response in DB for this date: #{s_date.to_s}"  # should write to log file
       end
       notams_all_1 << {s_date.to_s => x}
+      y = relevant_dr_duration_hash_1[s_date]
+      if y.nil?
+        y = 0.0
+        puts "Missing: Could not find a number of notams w scenario in DB for this date: #{s_date.to_s}"  # should write to log file
+      end
+      notams_flt_1 << {s_date.to_s => y}
     end
 
     notams_all_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
-    notams_flt_2 = notams_all_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
+    notams_flt_2 = notams_flt_1.inject{|memo, el| memo.merge( el ){|k, old_v, new_v| old_v + new_v}}
     all_notams_w_filtered = [
-      {name: "Blue Filtered Notams", data: notams_all_2}
-#      {name: "Red Filtered Notams", data: notams_flt_2}
+      {name: "Blue Filtered Notams", data: notams_all_2},
+      {name: "Red Filtered Notams", data: notams_flt_2}
     ]
   end
 end

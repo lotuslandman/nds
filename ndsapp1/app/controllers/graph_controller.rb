@@ -8,7 +8,7 @@ class GraphController < ApplicationController
       1   # these are the stream ids
     when "prod"
       2
-    when "fntb_test"
+    when "acy"
       3
     else
       exit

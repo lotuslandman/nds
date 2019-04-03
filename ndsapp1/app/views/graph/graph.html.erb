@@ -5,10 +5,10 @@
  in 
 <%= "FNTB (.75)" if session[:env] == "fntb" %>
 <%= "Production (OEX)" if session[:env] == "prod" %>
-<%= "FNTB (testset)" if session[:env] == "fntb_test" %>
+<%= "ACY 2nd Floor" if session[:env] == "acy" %>
 </h1>
-Change (<a href="fntb">FNTB</a> <a href="prod">Production</a>)<br>
-Change (<a href="response_time">Response Time</a> <a href="number_of_notams">Number of Notams</a> <a href="not_parseable">Response Not Parseable</a>)
+Change (<a href="fntb">FNTB</a>, <a href="prod">Production</a>, <a href="acy">ACY 2nd floor test</a>)<br>
+Change (<a href="response_time">Response Time</a>, <a href="number_of_notams">Number of Notams</a>, <a href="not_parseable">Response Not Parseable</a>)
 
 <%= javascript_include_tag "https://www.gstatic.com/charts/loader.js" %>
 
