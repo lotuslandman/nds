@@ -1,6 +1,7 @@
 class DeltaRequest < ApplicationRecord
   belongs_to :delta_stream
   has_many :notams, dependent: :destroy
+#  has_many :scenario_notams, -> { positive }, class_name: "Notam", dependent: :destroy
 
   validates :duration, presence: true
   validates :start_time, presence: true
@@ -87,8 +88,11 @@ class DeltaRequest < ApplicationRecord
     end
   end
 
-  def scenario_notams(scenario)
-    self.notams.select{|notam| notam.scenario == scenario}
+  def scenario_notams_a(scenario)
+    self_notams = self.notams
+#    self_notams_scenario = self_notams.by_scenario(602)    # this works but it is even slower than the select loop around self_notams
+    self_notams_scenario = self_notams.select{|notam| notam.scenario == scenario}
+    [self_notams.size, self_notams_scenario.size]
   end
   
 end

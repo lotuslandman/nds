@@ -1,6 +1,8 @@
 class Notam < ApplicationRecord
   belongs_to :delta_request
-
+#  scope :positive, -> { where("scenario < 602") }
+  scope :by_scenario, ->(scenario) { where(scenario: scenario) }
+  
   validates :scenario, presence: true
 #  validates :xsi_nil_error, presence: true
 #  validates :end_position, presence: true

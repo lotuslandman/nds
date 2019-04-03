@@ -118,9 +118,9 @@ class DeltaStream < ApplicationRecord
       when "response_time"
         relevant_dr_duration_hash[ind] = dr.duration           # duration could try dr.notams.size
       when "number_of_notams"
-        relevant_dr_duration_hash[ind] = dr.notams.size        # number of notams
-#        binding.pry if not scenario.nil?
-        relevant_dr_duration_hash_1[ind] = dr.scenario_notams(scenario).size
+        notam_and_notam_scenario = dr.scenario_notams_a(scenario)
+        relevant_dr_duration_hash[ind] = notam_and_notam_scenario[0]
+        relevant_dr_duration_hash_1[ind] = notam_and_notam_scenario[1]
       when "not_parseable"
         relevant_dr_duration_hash[ind] = (dr.not_parseable ? 1 : 0)  # 
       end
@@ -136,6 +136,7 @@ class DeltaStream < ApplicationRecord
         puts "Missing: Could not find a delta response in DB for this date: #{s_date.to_s}"  # should write to log file
       end
       notams_all_1 << {s_date.to_s => x}
+
       y = relevant_dr_duration_hash_1[s_date]
       if y.nil?
         y = 0.0
