@@ -1,20 +1,12 @@
 # Stream: 4
 # Environment: fntb
-# Request Type: delta
-# Reach back: 6 minutes
-# Frequency: 3 minutes (see crontab for this stream)
 
-stream              =  4
-env                 =  "fntb" # (but for stress testing)
-request_type        = :location
-delta_pull_duration =  6 # ARGV[0].to_i # 6 minutes ago
+stream              =  4      # (stream 4 is for stress testing in fntb)
+env                 =  "fntb" # (stream 4 is for stress testing in fntb)
 
 require 'rubygems'
 require 'pry'
-gem 'nokogiri' 
-require 'nokogiri' 
 require 'fileutils'
-require 'pony'
 require 'time'
 
 class RequestResponse   # Will create the appropriate request.xml file for the curl command and capture the output in response.xml
@@ -107,13 +99,15 @@ class RequestResponse   # Will create the appropriate request.xml file for the c
     system(curl_command)
     end_delta_time = Time.now
     duration = end_delta_time - start_delta_time
-    File.open(@delta_file_name_time, 'w') { |rf| rf.puts "#{start_delta_time}, #{end_delta_time}, #{duration}"}
-    puts "#{start_delta_time},#{end_delta_time},#{duration}"
+    file_size = File.size(@delta_file_name).to_f / 2**20
+    file_size_formatted = ('%.2f' % file_size)
+    File.open(@delta_file_name_time, 'w') { |rf| rf.puts "#{start_delta_time}, #{end_delta_time}, #{duration} sec, #{file_size_formatted} MB"}
+    puts "#{start_delta_time}, #{end_delta_time}, #{duration} sec, #{file_size_formatted} MB"
   end
 end
 
-def find_delta_start_date(delta_pull_duration)
-  time_range = delta_pull_duration * 60  # make into seconds
+def find_delta_start_date(delta_pull_duration_in_hours)
+  time_range = delta_pull_duration_in_hours * 60 * 60  # make into seconds
   end_time = Time.now
   start_time = end_time - time_range
   st = start_time.strftime "%Y-%m-%dT%H:%M:%S"
@@ -535,25 +529,51 @@ def airport_identifier_array
   ]
 end
 
+#### handles credentials ####
 system_information_hash = File.read("ignore/connection_information_#{env}.rb")
 system_information = eval(system_information_hash)
 username = system_information[:username]  # HARDCODE for Stress Testing
 password = system_information[:password]  # HARDCODE for Stress Testing
 endpoint = system_information[:endpoint]  # HARDCODE for Stress Testing
 
-request_path = "temporary/request#{stream}.xml"
+  def create_dir(dir)
+    Dir.mkdir(dir) unless File.exists?(dir)
+  end
 
-i = 0
+#### path/filename of request.xml ####
+request_path = "temporary/request#{stream}.xml"
+create_dir(request_path)
+
 transaction_id      = "" # for 2nd floor test
-while i < 3
-  aia = airport_identifier_array()
-  location = aia[i]
-  puts "Location: #{location}"
-  delta_start_date, delta_end_date = find_delta_start_date(delta_pull_duration)
-  req = RequestResponse.new(:endpoint => endpoint, :username => username, :password => password, :request_type => request_type, :trans_id => transaction_id, :delta_start_date => delta_start_date,  :delta_end_date => delta_end_date, :location => location)
+
+first_arg = ARGV[0].to_s
+case first_arg
+when "location"
+  puts "running #{ARGV[1]} location queries, each delayed by #{ARGV[2]} seconds"
+  number_of_locations = ARGV[1].to_i
+  location_delay = ARGV[2].to_i
+  request_type = :location
+  i = 0
+  while i < number_of_locations 
+    location = airport_identifier_array()[i]
+    puts "Location: #{location}"
+    req = RequestResponse.new(:endpoint => endpoint, :username => username, :password => password, :request_type => request_type, :trans_id => transaction_id, :location => location)
+    req.create_request_xml_file(request_path)
+    duration = req.create_response_file(request_path, env, stream)
+    sleep(location_delay)
+    i += 1
+  end
+when "delta"
+  request_type = :delta
+  delta_pull_duration_in_hours =  ARGV[1].to_i
+  puts "running 1 delta query with a reachback of #{delta_pull_duration_in_hours} hour"
+  delta_start_date, delta_end_date = find_delta_start_date(delta_pull_duration_in_hours)
+  req = RequestResponse.new(:endpoint => endpoint, :username => username, :password => password, :request_type => request_type, :trans_id => transaction_id, :delta_start_date => delta_start_date,  :delta_end_date => delta_end_date)
   req.create_request_xml_file(request_path)
   duration = req.create_response_file(request_path, env, stream)
-  i += 1
-  sleep(ARGV[0].to_i)
+else
+  puts "ruby stresstest.rb location number_of_airports sec_delay"
+  puts "or"
+  puts "ruby stresstest.rb delta delta_pull_reachback_in_hours"
+  exit
 end
-
