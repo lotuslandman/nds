@@ -50,5 +50,6 @@ test:
 production:
   <<: *default
   database: ndsapp1_production
-  username: ndsapp1
+#  username: ndsapp1 
+  username: deploy
   password: <%= ENV['NDSAPP1_DATABASE_PASSWORD'] %>

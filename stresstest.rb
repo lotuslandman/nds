@@ -5,7 +5,6 @@ stream              =  4      # (stream 4 is for stress testing in fntb)
 env                 =  "fntb" # (stream 4 is for stress testing in fntb)
 
 require 'rubygems'
-require 'pry'
 require 'fileutils'
 require 'time'
 
