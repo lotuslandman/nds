@@ -25,7 +25,6 @@ rails 5.1.6
 rbenv global 2.5 - brings back to version of ruby used to develop application (tried ruby version 2.2.2 to try something out)
 * git
  - Working from git commit "Demo to Hoon Blue & Red Filters"
-
  - pushed to remote master on github
 * todos
 ** remove hardcoded /home/scott/...
